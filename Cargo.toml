@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "crates/openlink-models",
+    "crates/openlink-auth",
+    "crates/openlink-cli",
+    "crates/openlink-sdk",
+    "crates/openlink-gui",
+    "crates/mock-oidc",
+    "crates/openlink-server",
+]
+resolver = "2"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }

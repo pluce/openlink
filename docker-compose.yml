@@ -1,0 +1,12 @@
+version: '3.9'
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222" # Client default
+      - "8222:8222" # Management HTTP
+      - "6222:6222" # Clustering
+    command: "-js -m 8222" # Enable JetStream and Monitoring
+    volumes:
+      - ./data/nats:/var/lib/nats-data
