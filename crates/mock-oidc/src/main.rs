@@ -11,7 +11,7 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use chrono::{Utc, Duration};
 use rsa::{RsaPrivateKey, RsaPublicKey, pkcs1::EncodeRsaPrivateKey};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
-use rand::thread_rng;
+
 
 // Global Keys
 struct OidcKeys {
@@ -25,7 +25,7 @@ static KEYS: OnceLock<OidcKeys> = OnceLock::new();
 async fn main() {
     // 1. Generate RSA Key Pair on Startup
     println!("MOCK-OIDC: Generating RSA-2048 keys...");
-    let mut rng = thread_rng();
+    let mut rng = rand::thread_rng();
     let bits = 2048;
     let priv_key = RsaPrivateKey::new(&mut rng, bits).expect("Failed to generate private key");
     let pub_key = RsaPublicKey::from(&priv_key);
@@ -134,6 +134,7 @@ async fn token(Form(req): Form<TokenRequest>) -> Json<Value> {
     let (sub, name, email) = match req.code.as_str() {
         "PILOT" => ("100000".to_string(), "Captain Smith".to_string(), "pilot@vatsim.net".to_string()),
         "ATC" => ("888888".to_string(), "Generic ATC".to_string(), "atc@vatsim.net".to_string()),
+        "ATC_EGLL" => ("777777".to_string(), "Generic ATC".to_string(), "atc@vatsim.net".to_string()),
 
         // Dynamic Fallback: use the provided code as the identity
         // This allows the CLI to request tokens for any network address

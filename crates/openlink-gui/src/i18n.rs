@@ -72,6 +72,17 @@ pub struct T {
     pub reject: &'static str,
     pub flight_connected: &'static str,
     pub select_flight: &'static str,
+    pub contact_station: &'static str,
+    pub transfer_to: &'static str,
+    pub end_service: &'static str,
+    pub target_station_placeholder: &'static str,
+    pub flight_terminated: &'static str,
+    pub conn_management: &'static str,
+    pub atc_uplink: &'static str,
+    pub pilot_downlink: &'static str,
+
+    // ── DCDU (inactive) ──
+    pub inactive_connection: &'static str,
 
     // ── Shared ──
     pub no_messages: &'static str,
@@ -118,6 +129,17 @@ pub fn t(locale: Locale) -> T {
             reject: "✗ Rejeter",
             flight_connected: "Vol connecté",
             select_flight: "Sélectionnez un vol dans la liste",
+            contact_station: "CONTACT",
+            transfer_to: "TRANSFERT",
+            end_service: "FIN DE SERVICE",
+            target_station_placeholder: "Station cible (ex: LFFF)",
+            flight_terminated: "Vol terminé",
+            conn_management: "GESTION CONNEXION",
+            atc_uplink: "UPLINK",
+            pilot_downlink: "DOWNLINK",
+
+            // DCDU (inactive)
+            inactive_connection: "Connexion inactive",
 
             // Shared
             no_messages: "Aucun message",
@@ -161,6 +183,17 @@ pub fn t(locale: Locale) -> T {
             reject: "✗ Reject",
             flight_connected: "Flight connected",
             select_flight: "Select a flight from the list",
+            contact_station: "CONTACT",
+            transfer_to: "TRANSFER",
+            end_service: "END SERVICE",
+            target_station_placeholder: "Target station (e.g. EGLL)",
+            flight_terminated: "Flight terminated",
+            conn_management: "CONN MANAGEMENT",
+            atc_uplink: "UPLINK",
+            pilot_downlink: "DOWNLINK",
+
+            // DCDU (inactive)
+            inactive_connection: "Inactive connection",
 
             // Shared
             no_messages: "No messages",

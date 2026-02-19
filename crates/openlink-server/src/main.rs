@@ -1,10 +1,20 @@
 //! OpenLink server — routes messages between stations on one or more networks.
 
+use clap::Parser;
 use openlink_models::NetworkId;
 
 mod acars;
 mod server;
 mod station_registry;
+
+/// OpenLink CPDLC relay server.
+#[derive(Parser, Debug)]
+#[command(name = "openlink-server", about = "OpenLink CPDLC relay server")]
+struct Args {
+    /// Delete all JetStream KV buckets on startup (station registry + CPDLC sessions).
+    #[arg(long)]
+    clean: bool,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,6 +25,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
         )
         .init();
+
+    let args = Args::parse();
 
     let nats_url =
         std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
@@ -28,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut handles = Vec::new();
     for network in networks {
         let server =
-            server::OpenLinkServer::new(network, &nats_url, &auth_url, &server_secret).await?;
+            server::OpenLinkServer::new(network, &nats_url, &auth_url, &server_secret, args.clean).await?;
         let handle = tokio::spawn(async move {
             server.run().await;
         });

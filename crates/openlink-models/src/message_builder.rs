@@ -42,8 +42,8 @@ use crate::acars::{
     AcarsEndpointCallsign, AcarsEnvelope, AcarsMessage, AcarsRouting, AcarsRoutingEndpoint,
 };
 use crate::cpdlc::{
-    CpdlcEnvelope, CpdlcMessage, CpdlcMessageType, CpdlcMetaMessage, FlightLevel,
-    ICAOAirportCode,
+    CpdlcApplicationMessage, CpdlcArgument, CpdlcEnvelope, CpdlcMessageType, CpdlcMetaMessage,
+    CpdlcSessionView, FlightLevel, ICAOAirportCode, MessageElement,
 };
 use crate::envelope::{OpenLinkEnvelope, OpenLinkMessage};
 use crate::network::{NetworkAddress, NetworkId, OpenLinkRouting, OpenLinkRoutingEndpoint};
@@ -186,22 +186,101 @@ impl CpdlcMessageBuilder {
         self
     }
 
-    // ── Application messages ─────────────────────────────────────────
-
-    /// (Uplink) Climb to a flight level.
-    pub fn climb_to(mut self, level: FlightLevel) -> Self {
-        self.message_type = Some(CpdlcMessageType::Application(
-            CpdlcMessage::UplinkClimbToFlightLevel { level },
+    /// End service — ATC terminates the active connection.
+    pub fn end_service(mut self) -> Self {
+        self.message_type = Some(CpdlcMessageType::Meta(
+            CpdlcMetaMessage::EndService,
         ));
         self
     }
 
-    /// (Downlink) Request a level change.
-    pub fn request_level_change(mut self, level: FlightLevel) -> Self {
-        self.message_type = Some(CpdlcMessageType::Application(
-            CpdlcMessage::DownlinkRequestLevelChange { level },
+    /// Session update — server broadcasts the authoritative session state.
+    pub fn session_update(mut self, session: CpdlcSessionView) -> Self {
+        self.message_type = Some(CpdlcMessageType::Meta(
+            CpdlcMetaMessage::SessionUpdate { session },
         ));
         self
+    }
+
+    // ── Application messages ─────────────────────────────────────────
+
+    /// Build a full application-level CPDLC message from pre-built elements.
+    ///
+    /// MIN is typically assigned by the server, so it defaults to 0 here.
+    /// Use `raw_message()` if you need full control.
+    pub fn application_message(mut self, elements: Vec<MessageElement>) -> Self {
+        self.message_type = Some(CpdlcMessageType::Application(
+            CpdlcApplicationMessage {
+                min: 0,
+                mrn: None,
+                elements,
+                timestamp: Utc::now(),
+            },
+        ));
+        self
+    }
+
+    /// Build an application message with optional MRN (used for response messages
+    /// where the caller provides pre-built elements and an MRN).
+    pub fn application_message_with_mrn(mut self, elements: Vec<MessageElement>, mrn: Option<u8>) -> Self {
+        self.message_type = Some(CpdlcMessageType::Application(
+            CpdlcApplicationMessage {
+                min: 0,
+                mrn,
+                elements,
+                timestamp: Utc::now(),
+            },
+        ));
+        self
+    }
+
+    /// Build a single-element uplink message by definition ID and args.
+    ///
+    /// Example: `.uplink("UM20", vec![CpdlcArgument::Level(FlightLevel::new(350))])`
+    pub fn uplink(self, id: impl Into<String>, args: Vec<CpdlcArgument>) -> Self {
+        self.application_message(vec![MessageElement::new(id, args)])
+    }
+
+    /// Build a single-element downlink message by definition ID and args.
+    ///
+    /// Example: `.downlink("DM9", vec![CpdlcArgument::Level(FlightLevel::new(390))])`
+    pub fn downlink(self, id: impl Into<String>, args: Vec<CpdlcArgument>) -> Self {
+        self.application_message(vec![MessageElement::new(id, args)])
+    }
+
+    /// Build a response message referencing a previous message's MIN.
+    ///
+    /// Example: `.response(13, "DM0", vec![])` for WILCO in reply to MIN=13
+    pub fn response(mut self, mrn: u8, id: impl Into<String>, args: Vec<CpdlcArgument>) -> Self {
+        self.message_type = Some(CpdlcMessageType::Application(
+            CpdlcApplicationMessage {
+                min: 0,
+                mrn: Some(mrn),
+                elements: vec![MessageElement::new(id, args)],
+                timestamp: Utc::now(),
+            },
+        ));
+        self
+    }
+
+    /// (Convenience) Uplink: Climb to a flight level.
+    pub fn climb_to(self, level: FlightLevel) -> Self {
+        self.uplink("UM20", vec![CpdlcArgument::Level(level)])
+    }
+
+    /// (Convenience) Downlink: Request climb to a flight level.
+    pub fn request_climb_to(self, level: FlightLevel) -> Self {
+        self.downlink("DM9", vec![CpdlcArgument::Level(level)])
+    }
+
+    /// (Convenience) Downlink: Request descent to a flight level.
+    pub fn request_descent_to(self, level: FlightLevel) -> Self {
+        self.downlink("DM10", vec![CpdlcArgument::Level(level)])
+    }
+
+    /// (Convenience) Downlink: Request a specific flight level.
+    pub fn request_level(self, level: FlightLevel) -> Self {
+        self.downlink("DM6", vec![CpdlcArgument::Level(level)])
     }
 
     /// Set a raw [`CpdlcMessageType`] directly for advanced / future message types.
@@ -635,11 +714,16 @@ mod tests {
 
         match msg {
             OpenLinkMessage::Acars(env) => match env.message {
-                AcarsMessage::CPDLC(cpdlc) => match cpdlc.message {
-                    CpdlcMessageType::Application(CpdlcMessage::UplinkClimbToFlightLevel {
-                        level,
-                    }) => assert_eq!(level, FlightLevel::new(350)),
-                    other => panic!("Expected ClimbTo, got {:?}", other),
+                AcarsMessage::CPDLC(cpdlc) => match &cpdlc.message {
+                    CpdlcMessageType::Application(app) => {
+                        assert_eq!(app.elements.len(), 1);
+                        assert_eq!(app.elements[0].id, "UM20");
+                        assert_eq!(
+                            app.elements[0].args,
+                            vec![CpdlcArgument::Level(FlightLevel::new(350))]
+                        );
+                    }
+                    other => panic!("Expected Application, got {:?}", other),
                 },
             },
             other => panic!("Expected Acars, got {:?}", other),

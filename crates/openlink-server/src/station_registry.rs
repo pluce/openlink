@@ -35,8 +35,16 @@ impl StationRegistry {
     pub async fn new(
         network_id: NetworkId,
         js: async_nats::jetstream::Context,
+        force_reset: bool,
     ) -> Result<Self> {
         let bucket_name = openlink_sdk::NatsSubjects::kv_station_registry(&network_id);
+        if force_reset {
+            info!(bucket = %bucket_name, "force-resetting station registry KV bucket");
+            match js.delete_key_value(&bucket_name).await {
+                Ok(_) => info!(bucket = %bucket_name, "bucket deleted"),
+                Err(e) => debug!(bucket = %bucket_name, error = %e, "no bucket to delete"),
+            }
+        }
         let config = async_nats::jetstream::kv::Config {
             bucket: bucket_name.clone(),
             history: 1,
@@ -122,7 +130,7 @@ mod tests {
             .expect("Failed to connect to NATS server");
         let js = async_nats::jetstream::new(client.clone());
         let network_id = NetworkId::new("test_network");
-        StationRegistry::new(network_id, js)
+        StationRegistry::new(network_id, js, false)
             .await
             .expect("create registry")
     }

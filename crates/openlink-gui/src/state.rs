@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use openlink_models::OpenLinkEnvelope;
+use openlink_models::{AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcSessionView, OpenLinkEnvelope};
 use openlink_sdk::OpenLinkClient;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -22,34 +22,14 @@ pub struct SavedStation {
     pub acars_address: String,
 }
 
-// ── Connection status for DCDU ────────────────────────────────────────
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum GroundStationStatus {
-    /// Not connected to any ground station
-    Disconnected,
-    /// Logon request sent, waiting for response
-    LogonPending(String),
-    /// Logon accepted, connection request received + confirmed
-    Connected(String),
-}
-
 // ── Per-station (ATC) tracking ────────────────────────────────────────
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum AtcFlightLinkStatus {
-    /// Logon request received, not yet accepted
-    LogonRequested,
-    /// Connected (logon accepted + connection confirmed)
-    Connected,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AtcLinkedFlight {
     pub callsign: String,
     pub aircraft_callsign: String,
-    pub aircraft_address: String,
-    pub status: AtcFlightLinkStatus,
+    pub aircraft_address: AcarsEndpointAddress,
+    pub phase: CpdlcConnectionPhase,
 }
 
 // ── Received message wrapper ──────────────────────────────────────────
@@ -60,8 +40,20 @@ pub struct ReceivedMessage {
     pub raw_json: String,
     pub envelope: Option<OpenLinkEnvelope>,
     pub from_callsign: Option<String>,
+    /// Target callsign (who the message is addressed to).
+    pub to_callsign: Option<String>,
     /// Human-readable serialized message text (from SerializedMessagePayload)
     pub display_text: Option<String>,
+    /// True if this message was sent by us (outgoing), false for received
+    pub is_outgoing: bool,
+    /// Message Identification Number (0–63) assigned by the server.
+    pub min: Option<u8>,
+    /// Message Reference Number — the MIN of the message this replies to.
+    pub mrn: Option<u8>,
+    /// Effective response attribute for this message (e.g. "W/U", "Y").
+    pub response_attr: Option<String>,
+    /// Whether a closing response (WILCO/UNABLE/etc.) has been sent to this message.
+    pub responded: bool,
 }
 
 // ── Tab state ─────────────────────────────────────────────────────────
@@ -81,13 +73,27 @@ pub struct TabState {
     // Setup fields
     pub setup: SetupFields,
 
-    // DCDU state
-    pub ground_station: GroundStationStatus,
+    // Server-authoritative CPDLC session state
+    pub session: Option<CpdlcSessionView>,
+
+    // DCDU state — logon_pending is set optimistically before SessionUpdate arrives
+    pub logon_pending: Option<String>,
     pub logon_input: String,
 
     // ATC state
     pub linked_flights: Vec<AtcLinkedFlight>,
     pub selected_flight_idx: Option<usize>,
+    pub contact_input: String,
+    pub conn_mgmt_open: bool,
+    pub atc_uplink_open: bool,
+
+    // Pilot state
+    pub pilot_downlink_open: bool,
+    pub fl_input: String,
+    /// Which downlink command is being parameterized (e.g. "DM6") — None = show menu
+    pub pending_downlink_cmd: Option<String>,
+    /// Which uplink command is being parameterized (e.g. "UM20") — None = show menu
+    pub pending_uplink_cmd: Option<String>,
 
     // Common
     pub messages: Vec<ReceivedMessage>,
@@ -145,10 +151,18 @@ impl TabState {
             label: "New".to_string(),
             phase: TabPhase::Setup,
             setup: SetupFields::default(),
-            ground_station: GroundStationStatus::Disconnected,
+            session: None,
+            logon_pending: None,
             logon_input: String::new(),
             linked_flights: Vec::new(),
             selected_flight_idx: None,
+            contact_input: String::new(),
+            conn_mgmt_open: false,
+            atc_uplink_open: false,
+            pilot_downlink_open: false,
+            fl_input: String::new(),
+            pending_downlink_cmd: None,
+            pending_uplink_cmd: None,
             messages: Vec::new(),
             nats_task_active: false,
         }

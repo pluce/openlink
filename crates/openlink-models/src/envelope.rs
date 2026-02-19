@@ -67,7 +67,10 @@ pub enum OpenLinkMessage {
 mod tests {
     use super::*;
     use crate::acars::{AcarsMessage, AcarsRouting, AcarsRoutingEndpoint};
-    use crate::cpdlc::{CpdlcEnvelope, CpdlcMessage, CpdlcMessageType, FlightLevel};
+    use crate::cpdlc::{
+        CpdlcApplicationMessage, CpdlcArgument, CpdlcEnvelope, CpdlcMessageType, FlightLevel,
+        MessageElement,
+    };
     use crate::network::{NetworkId, OpenLinkRoutingEndpoint};
 
     /// Helper to build a minimal envelope for tests.
@@ -87,11 +90,15 @@ mod tests {
                 message: AcarsMessage::CPDLC(CpdlcEnvelope {
                     source: "AFR1234".into(),
                     destination: "LFPG".into(),
-                    message: CpdlcMessageType::Application(
-                        CpdlcMessage::UplinkClimbToFlightLevel {
-                            level: FlightLevel::new(350),
-                        },
-                    ),
+                    message: CpdlcMessageType::Application(CpdlcApplicationMessage {
+                        min: 1,
+                        mrn: None,
+                        elements: vec![MessageElement::new(
+                            "UM20",
+                            vec![CpdlcArgument::Level(FlightLevel::new(350))],
+                        )],
+                        timestamp: Utc::now(),
+                    }),
                 }),
             }),
             token: "tok".to_string(),

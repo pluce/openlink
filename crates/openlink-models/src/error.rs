@@ -39,6 +39,31 @@ pub enum ModelError {
         /// The name of the missing field.
         field: String,
     },
+
+    /// A CPDLC message definition ID was not found in the registry.
+    #[error("unknown CPDLC message definition \"{id}\"")]
+    InvalidMessageId {
+        /// The unknown ID.
+        id: String,
+    },
+
+    /// An argument provided to a CPDLC message element did not match the
+    /// expected types from the definition.
+    #[error("invalid CPDLC argument for {message_id}: {reason}")]
+    InvalidArgument {
+        /// The message definition ID.
+        message_id: String,
+        /// Human-readable explanation.
+        reason: String,
+    },
+
+    /// A dialogue-level violation (e.g. invalid MRN, responding to a closed
+    /// dialogue, etc.).
+    #[error("CPDLC dialogue error: {reason}")]
+    InvalidDialogue {
+        /// Human-readable explanation.
+        reason: String,
+    },
 }
 
 #[cfg(test)]

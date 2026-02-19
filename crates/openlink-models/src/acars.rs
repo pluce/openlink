@@ -207,7 +207,9 @@ pub enum AcarsMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::cpdlc::{CpdlcMessage, CpdlcMessageType, FlightLevel};
+    use crate::cpdlc::{
+        CpdlcApplicationMessage, CpdlcArgument, CpdlcMessageType, FlightLevel, MessageElement,
+    };
 
     #[test]
     fn callsign_display_and_from() {
@@ -244,11 +246,15 @@ mod tests {
             message: AcarsMessage::CPDLC(CpdlcEnvelope {
                 source: "AFR1234".into(),
                 destination: "LFPG".into(),
-                message: CpdlcMessageType::Application(
-                    CpdlcMessage::UplinkClimbToFlightLevel {
-                        level: FlightLevel::new(350),
-                    },
-                ),
+                message: CpdlcMessageType::Application(CpdlcApplicationMessage {
+                    min: 1,
+                    mrn: None,
+                    elements: vec![MessageElement::new(
+                        "UM20",
+                        vec![CpdlcArgument::Level(FlightLevel::new(350))],
+                    )],
+                    timestamp: chrono::Utc::now(),
+                }),
             }),
         };
         let json = serde_json::to_string(&envelope).unwrap();

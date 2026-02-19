@@ -127,9 +127,8 @@ impl OpenLinkClient {
         let options = ConnectOptions::with_jwt(jwt, move |nonce| {
             let seed = seed_for_sign.clone();
             async move {
-                let kp = KeyPair::from_seed(&seed).unwrap();
-                let sig = kp.sign(&nonce).unwrap();
-                Ok(sig)
+                let kp = KeyPair::from_seed(&seed).map_err(async_nats::AuthError::new)?;
+                kp.sign(&nonce).map_err(async_nats::AuthError::new)
             }
         });
 
@@ -204,9 +203,8 @@ impl OpenLinkClient {
         let options = ConnectOptions::with_jwt(jwt_for_connect, move |nonce| {
             let seed = seed_for_sign.clone();
             async move {
-                let kp = KeyPair::from_seed(&seed).unwrap();
-                let sig = kp.sign(&nonce).unwrap();
-                Ok(sig)
+                let kp = KeyPair::from_seed(&seed).map_err(async_nats::AuthError::new)?;
+                kp.sign(&nonce).map_err(async_nats::AuthError::new)
             }
         });
 
