@@ -22,8 +22,8 @@ OpenLink is a reference platform composed of:
 At runtime, clients publish outbound envelopes to network outbox subjects, the server applies routing and CPDLC session rules, then forwards to destination inboxes.
 
 <div class="ol-arch-wrap">
-  <img class="ol-arch ol-arch-dark" src="/diagrams/openlink-architecture.svg" alt="OpenLink architecture diagram with bidirectional flows" />
-  <img class="ol-arch ol-arch-light" src="/diagrams/openlink-architecture-light.svg" alt="OpenLink architecture diagram with bidirectional flows" />
+  <img class="ol-arch ol-arch-dark" src="../../diagrams/openlink-architecture.svg" alt="OpenLink architecture diagram with bidirectional flows" />
+  <img class="ol-arch ol-arch-light" src="../../diagrams/openlink-architecture-light.svg" alt="OpenLink architecture diagram with bidirectional flows" />
 </div>
 
 Direct runtime interactions:

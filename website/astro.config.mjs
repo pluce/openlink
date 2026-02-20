@@ -3,7 +3,10 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 const site = process.env.SITE_URL || 'https://example.com';
-const base = process.env.BASE_PATH || '/';
+const repoName = process.env.GITHUB_REPOSITORY?.split('/')[1];
+const defaultBase = process.env.CI && repoName ? `/${repoName}/` : '/';
+const rawBase = process.env.BASE_PATH || defaultBase;
+const base = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
 // https://astro.build/config
 export default defineConfig({
