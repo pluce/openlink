@@ -1,0 +1,18 @@
+<svg width="220" height="56" viewBox="0 0 220 56" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">OpenLink logo</title>
+  <desc id="desc">Stylized O and L glyph with OpenLink wordmark</desc>
+
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3ea6ff"/>
+      <stop offset="100%" stop-color="#1f6feb"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="6" width="44" height="44" rx="12" fill="#0c1a33"/>
+  <path d="M15 28c0-7.2 5.8-13 13-13s13 5.8 13 13-5.8 13-13 13-13-5.8-13-13Zm6 0a7 7 0 1 0 14 0 7 7 0 0 0-14 0Z" fill="url(#g)"/>
+  <path d="M52 14h6v28h-6z" fill="#8cc3ff"/>
+
+  <text x="68" y="35" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="700" fill="#d9e8ff">Open</text>
+  <text x="127" y="35" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="700" fill="#3ea6ff">Link</text>
+</svg>

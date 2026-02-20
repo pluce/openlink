@@ -1,0 +1,35 @@
+---
+title: OpenLink
+description: OpenLink reference platform for ACARS/CPDLC over NATS.
+template: splash
+---
+
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## OpenLink at a glance
+
+OpenLink is a Rust-based reference implementation for ACARS/CPDLC messaging over NATS.
+This site combines a product overview and synchronized technical documentation.
+
+### What you get
+
+<CardGrid stagger>
+	<Card title="Server authoritative state" icon="check">
+		CPDLC session lifecycle and routing logic are managed centrally by the server.
+	</Card>
+	<Card title="SDK + raw transport docs" icon="open-book">
+		Integrate using the Rust SDK or directly with raw NATS subjects and envelopes.
+	</Card>
+	<Card title="Operational tooling" icon="seti:terminal">
+		Includes CLI, GUI, and a load-testing harness for throughput/latency validation.
+	</Card>
+</CardGrid>
+
+### Start here
+
+<CardGrid>
+	<LinkCard title="OpenLink Overview" href="/generated/overview/" />
+	<LinkCard title="SDK Guide" href="/generated/docs/sdk/readme/" />
+	<LinkCard title="Load Testing" href="/generated/crates/openlink-loadtest/readme/" />
+	<LinkCard title="CPDLC Message Catalog" href="/generated/docs/sdk/reference/cpdlc-messages/" />
+</CardGrid>

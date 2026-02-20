@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+  <title id="title">OpenLink architecture</title>
+  <desc id="desc">Bidirectional flows between clients, openlink-auth, openlink-server, and NATS JetStream.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0b1324"/>
+      <stop offset="100%" stop-color="#121f37"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8cc3ff"/>
+    </marker>
+    <style>
+      .title { font: 700 24px Inter,Segoe UI,Arial,sans-serif; fill: #dbeafe; }
+      .subtitle { font: 500 14px Inter,Segoe UI,Arial,sans-serif; fill: #9db7d9; }
+      .label { font: 600 16px Inter,Segoe UI,Arial,sans-serif; fill: #eaf3ff; }
+      .small { font: 500 13px Inter,Segoe UI,Arial,sans-serif; fill: #b9cee8; }
+      .flow { font: 500 12px Inter,Segoe UI,Arial,sans-serif; fill: #8cc3ff; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="760" fill="url(#bg)"/>
+
+  <text x="48" y="52" class="title">OpenLink Runtime Architecture</text>
+  <text x="48" y="76" class="subtitle">Bidirectional interactions across clients, auth, server, and messaging backbone</text>
+
+  <!-- External ecosystem -->
+  <rect x="48" y="108" rx="12" ry="12" width="1104" height="72" fill="#132743" stroke="#2b4f7a"/>
+  <text x="72" y="143" class="label">External operations / identity ecosystem</text>
+  <text x="72" y="164" class="small">Pilot &amp; ATC workflows (VATSIM/IVAO-style) and ICAO-aligned CPDLC/ACARS behavior</text>
+
+  <!-- Clients -->
+  <rect x="88" y="248" rx="12" ry="12" width="320" height="140" fill="#17325a" stroke="#4a7eb9"/>
+  <text x="112" y="286" class="label">Clients (ATC / Pilot apps)</text>
+  <text x="112" y="312" class="small">CLI, GUI, third-party integrations</text>
+  <text x="112" y="334" class="small">publish outbox / subscribe inbox</text>
+
+  <!-- Auth -->
+  <rect x="792" y="248" rx="12" ry="12" width="320" height="140" fill="#17325a" stroke="#4a7eb9"/>
+  <text x="816" y="286" class="label">openlink-auth</text>
+  <text x="816" y="312" class="small">OIDC bridge + scoped JWT issuance</text>
+
+  <!-- NATS -->
+  <rect x="120" y="458" rx="14" ry="14" width="960" height="124" fill="#0f2a4a" stroke="#3d71ad"/>
+  <text x="148" y="498" class="label">NATS + JetStream</text>
+  <text x="148" y="522" class="small">Subjects: outbox/inbox</text>
+  <text x="148" y="544" class="small">KV stores: station presence, reverse index, CPDLC session state</text>
+
+  <!-- Server -->
+  <rect x="454" y="620" rx="12" ry="12" width="292" height="104" fill="#17325a" stroke="#4a7eb9"/>
+  <text x="478" y="656" class="label">openlink-server</text>
+  <text x="478" y="680" class="small">Routing + CPDLC session authority</text>
+
+  <!-- Flows -->
+  <line x1="408" y1="302" x2="792" y2="302" stroke="#8cc3ff" stroke-width="3" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="520" y="292" class="flow">OIDC auth code / token exchange</text>
+
+  <line x1="248" y1="388" x2="248" y2="458" stroke="#8cc3ff" stroke-width="3" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="260" y="428" class="flow">pub/sub envelopes</text>
+
+  <line x1="952" y1="388" x2="952" y2="458" stroke="#8cc3ff" stroke-width="3" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="968" y="428" class="flow">JWT-backed NATS access</text>
+
+  <line x1="600" y1="582" x2="600" y2="620" stroke="#8cc3ff" stroke-width="3" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="620" y="608" class="flow">subscribe outbox / publish inbox + KV R/W</text>
+</svg>
