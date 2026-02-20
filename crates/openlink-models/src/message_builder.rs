@@ -22,16 +22,16 @@
 //!     .to("LFPG")
 //!     .logon_request("LFPG", "LFPG", "KJFK")
 //!     .envelope()
-//!     .source_address("vatsim", "765283")
-//!     .destination_server("vatsim")
+//!     .source_address("demonetwork", "765283")
+//!     .destination_server("demonetwork")
 //!     .build();
 //!
 //! // Station status with full envelope
 //! let envelope = MessageBuilder::station_status("1234", "LFPG", "394A0B")
 //!     .online()
 //!     .envelope()
-//!     .source_address("vatsim", "1234")
-//!     .destination_server("vatsim")
+//!     .source_address("demonetwork", "1234")
+//!     .destination_server("demonetwork")
 //!     .build();
 //! ```
 
@@ -739,8 +739,8 @@ mod tests {
             .to("LFPG")
             .logon_request("LFPG", "LFPG", "KJFK")
             .envelope()
-            .source_address("vatsim", "765283")
-            .destination_server("vatsim")
+            .source_address("demonetwork", "765283")
+            .destination_server("demonetwork")
             .token("my-token")
             .correlation_id("corr-001")
             .build();
@@ -753,14 +753,14 @@ mod tests {
         // Routing
         match &envelope.routing.source {
             OpenLinkRoutingEndpoint::Address(net, addr) => {
-                assert_eq!(net.to_string(), "vatsim");
+                assert_eq!(net.to_string(), "demonetwork");
                 assert_eq!(addr.to_string(), "765283");
             }
             other => panic!("Expected Address source, got {:?}", other),
         }
         match &envelope.routing.destination {
             OpenLinkRoutingEndpoint::Server(net) => {
-                assert_eq!(net.to_string(), "vatsim");
+                assert_eq!(net.to_string(), "demonetwork");
             }
             other => panic!("Expected Server destination, got {:?}", other),
         }
@@ -782,13 +782,13 @@ mod tests {
         let envelope = MessageBuilder::station_status("1234", "LFPG", "39401A")
             .online()
             .envelope()
-            .source_address("vatsim", "1234")
-            .destination_server("vatsim")
+            .source_address("demonetwork", "1234")
+            .destination_server("demonetwork")
             .build();
 
         match &envelope.routing.source {
             OpenLinkRoutingEndpoint::Address(net, addr) => {
-                assert_eq!(net.to_string(), "vatsim");
+                assert_eq!(net.to_string(), "demonetwork");
                 assert_eq!(addr.to_string(), "1234");
             }
             other => panic!("Expected Address source, got {:?}", other),
@@ -812,8 +812,8 @@ mod tests {
 
         let test_id = Uuid::nil();
         let envelope = MessageBuilder::envelope(msg)
-            .source_server("vatsim")
-            .destination_address("vatsim", "765283")
+            .source_server("demonetwork")
+            .destination_address("demonetwork", "765283")
             .id(test_id)
             .build();
 
@@ -822,12 +822,12 @@ mod tests {
         assert_eq!(envelope.correlation_id, None);
 
         match &envelope.routing.source {
-            OpenLinkRoutingEndpoint::Server(net) => assert_eq!(net.to_string(), "vatsim"),
+            OpenLinkRoutingEndpoint::Server(net) => assert_eq!(net.to_string(), "demonetwork"),
             other => panic!("Expected Server source, got {:?}", other),
         }
         match &envelope.routing.destination {
             OpenLinkRoutingEndpoint::Address(net, addr) => {
-                assert_eq!(net.to_string(), "vatsim");
+                assert_eq!(net.to_string(), "demonetwork");
                 assert_eq!(addr.to_string(), "765283");
             }
             other => panic!("Expected Address destination, got {:?}", other),
@@ -842,7 +842,7 @@ mod tests {
             .to("LFPG")
             .logon_response(true)
             .envelope()
-            .destination_server("vatsim")
+            .destination_server("demonetwork")
             .build();
     }
 
@@ -854,7 +854,7 @@ mod tests {
             .to("LFPG")
             .logon_response(true)
             .envelope()
-            .source_address("vatsim", "1234")
+                .source_address("demonetwork", "1234")
             .build();
     }
 

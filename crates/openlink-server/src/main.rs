@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server_secret =
         std::env::var("SERVER_SECRET").unwrap_or_else(|_| "openlink-dev-secret".to_string());
 
-    let networks = vec![NetworkId::new("afrv"), NetworkId::new("vatsim")];
+    let networks = vec![NetworkId::new("afrv"), NetworkId::new("demonetwork")];
 
     let mut handles = Vec::new();
     for network in networks {

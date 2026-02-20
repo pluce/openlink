@@ -32,7 +32,7 @@ impl AppConfig {
     /// | Variable              | Default                          | Description                     |
     /// |-----------------------|----------------------------------|---------------------------------|
     /// | `AUTH_PORT`            | `3001`                           | HTTP listen port                |
-    /// | `OIDC_VATSIM_TOKEN_URL` | `http://localhost:4000/token`  | OIDC token endpoint for vatsim  |
+    /// | `OIDC_DEMONETWORK_TOKEN_URL` | `http://localhost:4000/token`  | OIDC token endpoint for demonetwork  |
     ///
     /// Additional networks can be added by setting
     /// `OIDC_{NETWORK}_TOKEN_URL` where `{NETWORK}` is upper-cased.
@@ -44,13 +44,13 @@ impl AppConfig {
 
         let mut networks = HashMap::new();
 
-        // vatsim — always present with a default
-        let vatsim_token_url = std::env::var("OIDC_VATSIM_TOKEN_URL")
+        // demonetwork — always present with a default
+        let demonetwork_token_url = std::env::var("OIDC_DEMONETWORK_TOKEN_URL")
             .unwrap_or_else(|_| "http://localhost:4000/token".to_string());
         networks.insert(
-            NetworkId::new("vatsim"),
+            NetworkId::new("demonetwork"),
             OidcProviderConfig {
-                token_url: vatsim_token_url,
+                token_url: demonetwork_token_url,
             },
         );
 
@@ -71,12 +71,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn default_config_has_vatsim() {
+    fn default_config_has_demonetwork() {
         let cfg = AppConfig::from_env();
-        let vatsim = NetworkId::new("vatsim");
-        assert!(cfg.provider_for(&vatsim).is_some());
+        let demonetwork = NetworkId::new("demonetwork");
+        assert!(cfg.provider_for(&demonetwork).is_some());
         assert!(cfg
-            .provider_for(&vatsim)
+            .provider_for(&demonetwork)
             .unwrap()
             .token_url
             .contains("/token"));

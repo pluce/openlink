@@ -12,7 +12,7 @@ use crate::error::AuthError;
 /// identity from the response.
 ///
 /// The current implementation relies on the access-token format returned
-/// by mock-oidc (`vatsim_{cid}`).  A production implementation would
+/// by mock-oidc (`demonetwork_{cid}`).  A production implementation would
 /// instead validate the `id_token` JWT and read the `sub` claim.
 pub async fn exchange_code(
     provider: &OidcProviderConfig,
@@ -35,7 +35,7 @@ pub async fn exchange_code(
 
     let body: serde_json::Value = res.json().await?;
 
-    // Extract CID from the access_token (mock-oidc format: "vatsim_{cid}")
+    // Extract CID from the access_token (mock-oidc format: "demonetwork_{cid}")
     let access_token = body["access_token"]
         .as_str()
         .ok_or_else(|| AuthError::OidcExchangeFailed("missing access_token".into()))?;
@@ -45,7 +45,7 @@ pub async fn exchange_code(
 
 /// Parse the CID from a mock-oidc access token.
 ///
-/// The mock provider returns tokens in the form `"vatsim_{cid}"`.
+/// The mock provider returns tokens in the form `"demonetwork_{cid}"`.
 /// We take everything after the last `_` as the CID.
 fn extract_cid_from_token(token: &str) -> Result<String, AuthError> {
     token
@@ -64,7 +64,7 @@ mod tests {
 
     #[test]
     fn extract_cid_standard_format() {
-        let cid = extract_cid_from_token("vatsim_123456").unwrap();
+        let cid = extract_cid_from_token("demonetwork_123456").unwrap();
         assert_eq!(cid, "123456");
     }
 
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn extract_cid_trailing_underscore() {
-        let result = extract_cid_from_token("vatsim_");
+        let result = extract_cid_from_token("demonetwork_");
         assert!(result.is_err());
     }
 

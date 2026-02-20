@@ -5,7 +5,7 @@
 //! exchanged on the network carries an [`OpenLinkRouting`] header that
 //! identifies the source and destination endpoints.
 //!
-//! A [`NetworkId`] identifies a network (e.g. "vatsim", "icao") on which
+//! A [`NetworkId`] identifies a network (e.g. "demonetwork", "icao") on which
 //! stations are registered. Each station within a network is identified by
 //! its [`NetworkAddress`].
 
@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 
 /// Identifier for a network in the OpenLink ecosystem.
 ///
-/// A `NetworkId` names the network itself (e.g. `"vatsim"`, `"icao"`).
+/// A `NetworkId` names the network itself (e.g. `"demonetwork"`, `"icao"`).
 /// Stations registered on that network are then identified by their
 /// [`NetworkAddress`].
 ///
@@ -30,10 +30,10 @@ use serde::{Deserialize, Serialize};
 /// ```
 /// use openlink_models::NetworkId;
 ///
-/// let id = NetworkId::new("vatsim");
-/// assert_eq!(id.to_string(), "vatsim");
+/// let id = NetworkId::new("demonetwork");
+/// assert_eq!(id.to_string(), "demonetwork");
 ///
-/// let id2: NetworkId = "vatsim".into();
+/// let id2: NetworkId = "demonetwork".into();
 /// assert_eq!(id, id2);
 /// ```
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

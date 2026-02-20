@@ -1,113 +1,251 @@
-# Architecture OpenLink - Implémentation de Référence
+# OpenLink Reference Workspace
 
-Ce repository contient l'implémentation de référence du système OpenLink (ACARS Next Gen).
-Le cœur est écrit en Rust, avec une définition stricte des protocoles via JSON Schema et une architecture orientée messages (MOM) sur NATS.
+OpenLink is a Rust-based reference implementation for ACARS/CPDLC messaging over NATS.
 
-## Structure du Workspace (Mono-repo)
+This repository provides:
 
-| Composant | Path | Description |
-|-----------|------|-------------|
-| **Schemas** | [`schemas/`](./schemas) | **Source de Vérité**. Contrats d'interface (JSON Schema) agnostiques. |
-| **Models** | [`crates/openlink-models`](./crates/openlink-models) | Bibliothèque de types Rust générée automatiquement. |
-| **SDK** | [`crates/openlink-sdk`](./crates/openlink-sdk) | Kit de développement client (Authentification, Chiffrement, Transport NATS). |
-| **Session Manager** | [`crates/openlink-cpdlc`](./crates/openlink-cpdlc) | **Routeur Intelligent**. Résout les indicatifs (ex: "LFPG") en adresses réseau (CID). |
-| **Auth Service** | [`crates/openlink-auth`](./crates/openlink-auth) | Service de Token (STS). Échange les tokens OIDC contre des JWT NATS signés. |
-| **CLI** | [`crates/openlink-cli`](./crates/openlink-cli) | Client de démonstration (Pilot/ATC) et outil de test. |
-| **Mock IDP** | [`crates/mock-oidc`](./crates/mock-oidc) | Simulateur de fournisseur d'identité (OAuth2/OIDC) pour le dev local. |
+- protocol/domain models,
+- a reusable SDK,
+- authentication and routing services,
+- demo clients (CLI and GUI),
+- language-agnostic protocol artifacts for external integrators.
 
-## Démarrage Rapide
+## Architecture summary
 
-### Pré-requis
-- Rust (Cargo)
-- Docker (pour NATS)
+OpenLink uses an event-driven architecture on top of NATS subjects.
 
-### 1. Lancer l'infrastructure
+- Clients publish outbound envelopes to `openlink.v1.{network}.outbox.{address}`.
+- The server subscribes wildcard outbox subjects, applies protocol/session logic, and forwards to destination inbox subjects.
+- Clients subscribe their own inbox subject and update local UI/application state.
+
+Important design rule:
+
+- **Server side is authoritative** for CPDLC protocol/session truth (connection lifecycle, dialogue state, session snapshots).
+- **Client side** focuses on transport integration, validation, and user workflow projection.
+
+For a complete integrator guide, see [docs/sdk/README.md](docs/sdk/README.md).
+
+## Workspace layout
+
+### Core crates
+
+| Crate | Path | Purpose |
+|---|---|---|
+| `openlink-models` | [crates/openlink-models](crates/openlink-models) | Canonical protocol/domain types and message builders (OpenLink, ACARS, CPDLC). |
+| `openlink-sdk` | [crates/openlink-sdk](crates/openlink-sdk) | High-level client API: auth exchange, NATS connection, subject conventions, send/subscribe helpers. |
+| `openlink-server` | [crates/openlink-server](crates/openlink-server) | Relay/router service. Handles station registry, CPDLC session state machine, forwarding, session updates. |
+| `openlink-auth` | [crates/openlink-auth](crates/openlink-auth) | Auth gateway. Exchanges OIDC authorization codes for scoped NATS JWTs. |
+
+### Demo / tooling crates
+
+| Crate | Path | Purpose |
+|---|---|---|
+| `openlink-cli` | [crates/openlink-cli](crates/openlink-cli) | Scriptable CLI client for CPDLC scenarios, protocol testing, and automation. |
+| `openlink-gui` | [crates/openlink-gui](crates/openlink-gui) | Dioxus desktop demonstrator (ATC and DCDU views). |
+| `mock-oidc` | [crates/mock-oidc](crates/mock-oidc) | Local OIDC provider simulator used in development. |
+
+### Specs and documentation
+
+| Path | Purpose |
+|---|---|
+| [spec](spec) | Language-agnostic protocol artifacts (CPDLC catalog JSON + schema). |
+| [docs/sdk](docs/sdk) | Integrator documentation: concepts, architecture, transport, envelopes, checklist, reference. |
+
+## Prerequisites
+
+- Rust toolchain (stable) with `cargo`
+- Docker / Docker Compose
+
+## Quick start (full local stack)
+
+Run from repository root.
+
+### 1) Start NATS
+
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-### 2. Démarrer les Services Core
-Dans des terminaux séparés :
+Default ports:
 
-**Mock Identity Provider :**
+- `4222`: NATS client connections
+- `8222`: NATS monitoring
+
+### 2) Start authentication services (separate terminals)
+
+Mock OIDC provider:
+
 ```bash
-# Génère les identités à la volée sur http://localhost:4000
 cargo run -p mock-oidc
 ```
 
-**Service d'Authentification :**
+OpenLink auth service:
+
 ```bash
-# Valide les tokens OIDC et émet les JWT NATS
 cargo run -p openlink-auth
 ```
 
-**Session Manager (Routeur) :**
+### 3) Start OpenLink server
+
 ```bash
-# Gère le routage logique des messages CPDLC
-cargo run -p openlink-cpdlc
+cargo run -p openlink-server
 ```
 
-### 3. Utiliser le CLI (Démo Inter-Processus)
+Optional clean start (reset JetStream KV buckets):
 
-Le CLI permet d'envoyer des messages atomiques pour tester le flux.
+```bash
+cargo run -p openlink-server -- --clean
+```
 
-#### Étape A : Lancer un ATC en écoute (ex: LFPG)
-Dans un terminal :
+### 4) Start a client
+
+GUI demonstrator:
+
+```bash
+cargo run -p openlink-gui
+```
+
+or CLI client (examples below).
+
+## CLI usage examples
+
+### Bring stations online
+
+Pilot station online:
+
 ```bash
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address ATC \
+  --network-id demonetwork --network-address PILOT \
+  acars --callsign AFR123 --address AY213 \
+  online
+```
+
+ATC station online:
+
+```bash
+cargo run -p openlink-cli -- \
+  --network-id demonetwork --network-address ATC \
+  acars --callsign LFPG --address LFPGCYA \
+  online
+```
+
+### Listen for CPDLC messages
+
+ATC listener:
+
+```bash
+cargo run -p openlink-cli -- \
+  --network-id demonetwork --network-address ATC \
   acars --callsign LFPG --address LFPGCYA \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc \
   listen
 ```
 
-#### Étape B : Envoyer un Logon Request (Pilote -> LFPG)
-Dans un autre terminal :
+Pilot listener:
+
 ```bash
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address PILOT \
+  --network-id demonetwork --network-address PILOT \
+  acars --callsign AFR123 --address AY213 \
+  cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot \
+  listen
+```
+
+### Send sample CPDLC flow
+
+Pilot sends logon request:
+
+```bash
+cargo run -p openlink-cli -- \
+  --network-id demonetwork --network-address PILOT \
   acars --callsign AFR123 --address AY213 \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot \
   send logon-request --station LFPG --origin LFPG --destination EGLL
 ```
 
-#### Étape C : Répondre au Logon (LFPG -> Pilote)
-Dans un troisième terminal (ou après avoir arrêté l'écoute de l'étape A) :
+ATC sends logon response:
+
 ```bash
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address ATC \
+  --network-id demonetwork --network-address ATC \
   acars --callsign LFPG --address LFPGCYA \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc \
   send logon-response --accepted
 ```
 
-## Scénarios Supportés
+## Build, check, and test
 
-### 1. Connexion Initiale (Logon)
-1. Le pilote envoie un `LOGON REQUEST` à LFPG.
-2. L'ATC (LFPG) accepte le Logon (`LOGON RESPONSE`).
-3. L'ATC initie la connexion (`CONNECTION REQUEST`).
-4. Le pilote confirme (`CONNECTION CONFIRM`).
+Workspace check:
 
-### 2. Transfert Connecté (Figure 2-17 ICAO)
-1. L'ATC A (LFPG) initie un transfert vers l'ATC B (EGLL).
-2. Séquence Automatique :
-   - LFPG envoie `NDA Notification` (Next Data Authority) au pilote.
-   - LFPG envoie `Transfer Request` à EGLL.
-   - EGLL accepte et envoie `Transfer Response`.
-   - EGLL envoie `Connection Request` au pilote (via le routage Session Manager).
-   - Le pilote confirme la connexion avec EGLL.
-   - EGLL notifie LFPG de la fin du transfert.
-   - LFPG termine la session (`Terminated`).
+```bash
+cargo check
+```
 
-## Fonctionnalités Clés
+Check specific crate:
 
-### Routage Dynamique
-Les pilotes s'adressent aux stations par leur nom (ex: "LFPG"). Le Session Manager intercepte ces demandes, résout les adresses techniques (ex: "LFPGCYA") via le fichier de configuration et route le message via NATS.
+```bash
+cargo check -p openlink-gui
+```
 
-### Sécurité Zero Trust
-- **Authentification Forte** : Le CLI s'authentifie d'abord auprès de `mock-oidc` pour obtenir un ID Token, puis l'échange contre un JWT NATS via `openlink-auth`.
-- **Jetons Signés** : Les permissions NATS sont limitées par utilisateur (CID).
+Run all tests:
 
-### Typage Fort
-Tout message circulant sur le réseau est garanti conforme aux schémas JSON grâce à la librairie `openlink-models`.
+```bash
+cargo test
+```
+
+Run tests for one crate:
+
+```bash
+cargo test -p openlink-server
+```
+
+## Protocol catalog and generated reference
+
+OpenLink exports a language-agnostic CPDLC catalog used by docs and external SDKs.
+
+Export catalog JSON:
+
+```bash
+cargo run -p openlink-models --example export_cpdlc_catalog -- spec/cpdlc/catalog.v1.json
+```
+
+Generate markdown message reference:
+
+```bash
+cargo run -p openlink-models --example generate_cpdlc_reference -- spec/cpdlc/catalog.v1.json docs/sdk/reference/cpdlc-messages.md
+```
+
+See:
+
+- [spec/README.md](spec/README.md)
+- [docs/sdk/reference/README.md](docs/sdk/reference/README.md)
+
+## Important environment variables
+
+Most components work with defaults, but these are commonly overridden:
+
+- `NATS_URL` (default `nats://localhost:4222`)
+- `AUTH_URL` (default `http://localhost:3001`)
+- `SERVER_SECRET` (default `openlink-dev-secret`)
+- `AUTH_PORT` for auth service (default `3001`)
+- `OIDC_DEMONETWORK_TOKEN_URL` for auth-to-OIDC exchange (default `http://localhost:4000/token`)
+- `RUST_LOG` for log filtering
+
+## Troubleshooting
+
+- If auth fails, ensure `mock-oidc` and `openlink-auth` are running.
+- If routing fails, ensure `openlink-server` is running and connected to NATS.
+- If state looks stale in demos, restart server with `--clean` to reset JetStream KV.
+- If GUI cannot connect, verify `NATS_URL` and `AUTH_URL` match your local setup.
+
+## Additional documentation
+
+- Integrator guide: [docs/sdk/README.md](docs/sdk/README.md)
+- Crate-level docs:
+  - [crates/openlink-models/README.md](crates/openlink-models/README.md)
+  - [crates/openlink-sdk/README.md](crates/openlink-sdk/README.md)
+  - [crates/openlink-auth/README.md](crates/openlink-auth/README.md)
+  - [crates/openlink-server/README.md](crates/openlink-server/README.md)
+  - [crates/openlink-cli/README.md](crates/openlink-cli/README.md)
+  - [crates/openlink-gui/README.md](crates/openlink-gui/README.md)
+  - [crates/mock-oidc/README.md](crates/mock-oidc/README.md)

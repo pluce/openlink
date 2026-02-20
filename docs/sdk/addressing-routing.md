@@ -24,14 +24,14 @@ Clarify the difference between transport routing identity and operational identi
 
 Input:
 
-- network: `vatsim`
+- network: `demonetwork`
 - network address: `CID_987654`
 - callsign: `AFR123`
 
 Usage:
 
-- publish to `openlink.v1.vatsim.outbox.CID_987654`
-- subscribe to `openlink.v1.vatsim.inbox.CID_987654`
+- publish to `openlink.v1.demonetwork.outbox.CID_987654`
+- subscribe to `openlink.v1.demonetwork.inbox.CID_987654`
 - set CPDLC `source` to `AFR123`
 
 ## Common mistakes

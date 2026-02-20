@@ -30,7 +30,7 @@ docker-compose up -d nats
 Send an `Online` status message to the network.
 ```bash
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address LFPG \
+  --network-id demonetwork --network-address LFPG \
   acars --callsign LFPG --address LFPGCYA \
   online
 ```
@@ -44,7 +44,7 @@ You must specify whether you are acting as a **pilot** or **atc**, and provide t
 Subscribes to the inbox and prints received envelopes.
 ```bash
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address ATC \
+  --network-id demonetwork --network-address ATC \
   acars --callsign LFPG --address LFPGCYA \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc \
   listen
@@ -54,7 +54,7 @@ cargo run -p openlink-cli -- \
 ```bash
 # As Pilot AFR123 (Addr: AY213)
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address PILOT \
+  --network-id demonetwork --network-address PILOT \
   acars --callsign AFR123 --address AY213 \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot \
   send logon-request --station LFPG --origin LFPG --destination EGLL
@@ -64,7 +64,7 @@ cargo run -p openlink-cli -- \
 ```bash
 # As ATC LFPG
 cargo run -p openlink-cli -- \
-  --network-id vatsim --network-address ATC \
+  --network-id demonetwork --network-address ATC \
   acars --callsign LFPG --address LFPGCYA \
   cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc \
   send logon-response --accepted
@@ -94,17 +94,17 @@ The CLI uses `clap` for argument parsing and `openlink-sdk` for:
 ## Sample Sequence
 
 ```
-cargo run -p openlink-cli -- --network-id vatsim --network-address PILOT acars --callsign AFR123 --address AY213 online
+cargo run -p openlink-cli -- --network-id demonetwork --network-address PILOT acars --callsign AFR123 --address AY213 online
 
-cargo run -p openlink-cli -- --network-id vatsim --network-address ATC acars --callsign LFPG --address LFPGCYA online
+cargo run -p openlink-cli -- --network-id demonetwork --network-address ATC acars --callsign LFPG --address LFPGCYA online
 
 # in two different terms:
-cargo run -p openlink-cli -- --network-id vatsim --network-address PILOT acars --callsign AFR123 --address AY213 cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot listen
+cargo run -p openlink-cli -- --network-id demonetwork --network-address PILOT acars --callsign AFR123 --address AY213 cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot listen
 
-cargo run -p openlink-cli -- --network-id vatsim --network-address ATC acars --callsign LFPG --address LFPGCYA cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc listen
+cargo run -p openlink-cli -- --network-id demonetwork --network-address ATC acars --callsign LFPG --address LFPGCYA cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc listen
 
 
-cargo run -p openlink-cli -- --network-id vatsim --network-address PILOT acars --callsign AFR123 --address AY213 cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot send logon-request --station LFPG --origin LFPG --destination EGLL
+cargo run -p openlink-cli -- --network-id demonetwork --network-address PILOT acars --callsign AFR123 --address AY213 cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --pilot send logon-request --station LFPG --origin LFPG --destination EGLL
 
-cargo run -p openlink-cli -- --network-id vatsim --network-address ATC acars --callsign LFPG --address LFPGCYA cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc send logon-response --accepted
+cargo run -p openlink-cli -- --network-id demonetwork --network-address ATC acars --callsign LFPG --address LFPGCYA cpdlc --aircraft-callsign AFR123 --aircraft-address AY213 --atc send logon-response --accepted
 ```

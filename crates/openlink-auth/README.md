@@ -54,11 +54,11 @@ Exchange an OIDC code for a NATS JWT.
 {
   "oidc_code": "PILOT",
   "user_nkey_public": "UABC...",
-  "network": "vatsim"
+   "network": "demonetwork"
 }
 ```
 
-`network` defaults to `"vatsim"` if omitted (backward-compatible).
+`network` defaults to `"demonetwork"` if omitted.
 
 **Success (200):**
 
@@ -66,7 +66,7 @@ Exchange an OIDC code for a NATS JWT.
 {
   "jwt": "eyJ0eXAi...",
   "cid": "100000",
-  "network": "vatsim"
+   "network": "demonetwork"
 }
 ```
 
@@ -88,7 +88,7 @@ Returns the NATS account public key as plain text.
 | Env var                  | Default                         | Description |
 |--------------------------|---------------------------------|-------------|
 | `AUTH_PORT`              | `3001`                          | HTTP listen port |
-| `OIDC_VATSIM_TOKEN_URL`  | `http://localhost:4000/token`   | OIDC token endpoint for the `vatsim` network |
+| `OIDC_DEMONETWORK_TOKEN_URL`  | `http://localhost:4000/token`   | OIDC token endpoint for the `demonetwork` network |
 | `RUST_LOG`               | `info`                          | Logging level filter (`tracing-subscriber` `EnvFilter`) |
 
 Additional networks can be added by setting `OIDC_{NETWORK}_TOKEN_URL`

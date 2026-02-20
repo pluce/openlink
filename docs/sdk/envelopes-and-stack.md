@@ -46,8 +46,8 @@ Explain exactly what you need to serialize/parse in a client integration.
   "id": "...",
   "timestamp": "...",
   "routing": {
-    "source": { "Address": ["vatsim", "CID_AFR123"] },
-    "destination": { "Server": "vatsim" }
+    "source": { "Address": ["demonetwork", "CID_AFR123"] },
+    "destination": { "Server": "demonetwork" }
   },
   "payload": {
     "type": "Acars",

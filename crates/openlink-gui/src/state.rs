@@ -150,7 +150,7 @@ impl Default for SetupFields {
     fn default() -> Self {
         Self {
             station_type: StationType::Aircraft,
-            network_id: "vatsim".to_string(),
+            network_id: "demonetwork".to_string(),
             network_address: String::new(),
             callsign: String::new(),
             acars_address: String::new(),

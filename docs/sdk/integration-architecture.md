@@ -54,6 +54,33 @@ Responsibilities:
 - maintain protocol session authority,
 - synchronize network-level state.
 
+## Server business logic vs client logic
+
+### Server-side (OpenLink)
+
+The server is the source of truth for protocol behavior:
+
+- validates and routes CPDLC message flows,
+- maintains session state (active/inactive connections, handover context),
+- determines authoritative dialogue progression from exchanged messages,
+- publishes session updates to clients after state mutations,
+- ensures reconnecting participants can recover current session context.
+
+### Client-side (Integrator)
+
+The client focuses on product integration and UX:
+
+- transport connection/subscription lifecycle,
+- message rendering and command/reply input flows,
+- local pre-send validation against catalog,
+- operator ergonomics (search, keyboard, composition workflows),
+- resilience behaviors (retry, reconnect, resubscribe).
+
+### Implementation rule of thumb
+
+If logic affects shared protocol truth between participants, it belongs server-side.
+If logic affects local user interaction, it belongs client-side.
+
 ## Example deployment mapping
 
 Aircraft product:

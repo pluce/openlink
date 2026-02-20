@@ -10,7 +10,7 @@ helpers for constructing them.
 
 | Module | Description |
 |---|---|
-| `network` | Network-level addressing: `NetworkId` (identifies a network such as *vatsim* or *icao*) and `NetworkAddress` (identifies a station within that network). |
+| `network` | Network-level addressing: `NetworkId` (identifies a network such as *demonetwork* or *icao*) and `NetworkAddress` (identifies a station within that network). |
 | `envelope` | `OpenLinkEnvelope` — the standard wrapper for all messages, carrying a UUID, timestamp, routing header and payload. |
 | `acars` | ACARS layer: `AcarsEnvelope`, `AcarsRouting`, endpoint callsigns and addresses. |
 | `cpdlc` | CPDLC messaging: `CpdlcEnvelope`, meta messages (logon, connection, contact, transfer), application messages, `FlightLevel`, `ICAOAirportCode`, `SerializedMessagePayload`. |

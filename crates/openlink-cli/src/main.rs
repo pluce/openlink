@@ -18,7 +18,7 @@ use futures::StreamExt;
 #[command(about = "OpenLink System Demonstrator CLI")]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    /// Identifiant du réseau (ex: VATSIM)
+    /// Identifiant du réseau (ex: DEMONETWORK)
     #[arg(long)]
     pub network_id: NetworkId,
 

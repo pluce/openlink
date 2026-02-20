@@ -1,6 +1,6 @@
 //! OpenLink auth service — exchanges OIDC authorization codes for NATS JWTs.
 //!
-//! The service is configured with a mapping of network keys (e.g. `vatsim`)
+//! The service is configured with a mapping of network keys (e.g. `demonetwork`)
 //! to OIDC provider parameters.  On each request it:
 //!
 //! 1. Validates the OIDC code against the identity provider.
@@ -50,13 +50,13 @@ struct ExchangeRequest {
     oidc_code: String,
     /// Client-generated NKey public key to embed in the JWT.
     user_nkey_public: String,
-    /// Network the user wants to authenticate against (e.g. `"vatsim"`).
+    /// Network the user wants to authenticate against (e.g. `"demonetwork"`).
     #[serde(default = "default_network")]
     network: String,
 }
 
 fn default_network() -> String {
-    "vatsim".to_string()
+    "demonetwork".to_string()
 }
 
 /// Response of `POST /exchange`.

@@ -10,7 +10,7 @@
 //! use openlink_sdk::OpenLinkClient;
 //!
 //! # async fn run() -> Result<(), openlink_sdk::SdkError> {
-//! let network = NetworkId::new("vatsim");
+//! let network = NetworkId::new("demonetwork");
 //! let client = OpenLinkClient::connect_with_authorization_code(
 //!     "nats://localhost:4222",
 //!     "http://localhost:3001",
@@ -495,9 +495,9 @@ mod tests {
     #[test]
     fn accessors_are_consistent() {
         // This tests the type contracts without a live NATS connection
-        let network = NetworkId::new("vatsim");
+        let network = NetworkId::new("demonetwork");
         let address = NetworkAddress::new("12345");
-        assert_eq!(network.as_str(), "vatsim");
+        assert_eq!(network.as_str(), "demonetwork");
         assert_eq!(address.as_str(), "12345");
     }
 }

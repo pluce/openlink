@@ -104,7 +104,7 @@ pub fn StationSetup(
                     input {
                         r#type: "text",
                         value: "{setup.network_id}",
-                        placeholder: "vatsim",
+                        placeholder: "demonetwork",
                         oninput: move |evt: Event<FormData>| {
                             let mut state = app_state.write();
                             if let Some(tab) = state.tab_mut_by_id(tab_id) {

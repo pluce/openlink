@@ -30,6 +30,17 @@ Use raw mode when you need full control of NATS, serialization, and runtime beha
 - response attribute is respected,
 - dialogue closing/suggestion rules are applied on replies.
 
+## Server-authoritative behavior to account for
+
+Even in raw mode, clients must assume OpenLink server is authoritative for session/dialogue state.
+
+Client guidance:
+
+- do not persist an independent protocol state machine as source of truth,
+- consume and apply incoming session updates as canonical state,
+- treat local state as UI projection/cache only,
+- reconcile UI after reconnect using server-provided snapshots.
+
 ## Minimal scenario example
 
 - Pilot sends a CPDLC request using valid message ID and arguments.

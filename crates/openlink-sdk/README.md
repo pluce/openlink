@@ -41,7 +41,7 @@ use openlink_sdk::{OpenLinkClient, MessageBuilder, NatsSubjects};
 use openlink_models::NetworkId;
 
 // 1. Authenticate & connect
-let network = NetworkId::new("vatsim");
+let network = NetworkId::new("demonetwork");
 let client = OpenLinkClient::connect_with_authorization_code(
     "nats://localhost:4222",
     "http://localhost:3001",

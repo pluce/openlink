@@ -200,14 +200,14 @@ mod tests {
     #[test]
     fn jwt_has_three_parts() {
         let kp = test_account_kp();
-        let jwt = sign_user_jwt(&kp, "UABC123", "42", &NetworkId::new("vatsim"), 3600).unwrap();
+        let jwt = sign_user_jwt(&kp, "UABC123", "42", &NetworkId::new("demonetwork"), 3600).unwrap();
         assert_eq!(jwt.split('.').count(), 3);
     }
 
     #[test]
     fn jwt_body_contains_correct_permissions() {
         let kp = test_account_kp();
-        let net = NetworkId::new("vatsim");
+        let net = NetworkId::new("demonetwork");
         let jwt = sign_user_jwt(&kp, "UABC123", "42", &net, 3600).unwrap();
 
         // Decode the body (second part)
@@ -220,11 +220,11 @@ mod tests {
 
         assert_eq!(
             publish_allow[0].as_str().unwrap(),
-            "openlink.v1.vatsim.outbox.42"
+            "openlink.v1.demonetwork.outbox.42"
         );
         assert_eq!(
             subscribe_allow[0].as_str().unwrap(),
-            "openlink.v1.vatsim.inbox.42"
+            "openlink.v1.demonetwork.inbox.42"
         );
     }
 
@@ -247,7 +247,7 @@ mod tests {
         let kp = test_account_kp();
         let expected_issuer = kp.public_key();
         let jwt =
-            sign_user_jwt(&kp, "UKEY", "1", &NetworkId::new("vatsim"), 3600).unwrap();
+            sign_user_jwt(&kp, "UKEY", "1", &NetworkId::new("demonetwork"), 3600).unwrap();
 
         let body_b64 = jwt.split('.').nth(1).unwrap();
         let body_bytes = URL_SAFE_NO_PAD.decode(body_b64).unwrap();
@@ -260,7 +260,7 @@ mod tests {
     fn jwt_expiry_matches_ttl() {
         let kp = test_account_kp();
         let ttl = 7200_u64;
-        let jwt = sign_user_jwt(&kp, "UKEY", "1", &NetworkId::new("vatsim"), ttl).unwrap();
+        let jwt = sign_user_jwt(&kp, "UKEY", "1", &NetworkId::new("demonetwork"), ttl).unwrap();
 
         let body_b64 = jwt.split('.').nth(1).unwrap();
         let body_bytes = URL_SAFE_NO_PAD.decode(body_b64).unwrap();
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn server_jwt_has_wildcard_permissions() {
         let kp = test_account_kp();
-        let net = NetworkId::new("vatsim");
+        let net = NetworkId::new("demonetwork");
         let jwt = sign_server_jwt(&kp, "USERVER", &net, 3600).unwrap();
 
         let body_b64 = jwt.split('.').nth(1).unwrap();
@@ -296,9 +296,9 @@ mod tests {
             .map(|v| v.as_str().unwrap())
             .collect();
 
-        assert!(pub_allow.contains(&"openlink.v1.vatsim.inbox.>"));
+        assert!(pub_allow.contains(&"openlink.v1.demonetwork.inbox.>"));
         assert!(pub_allow.contains(&"$JS.API.>"));
-        assert!(sub_allow.contains(&"openlink.v1.vatsim.outbox.>"));
+        assert!(sub_allow.contains(&"openlink.v1.demonetwork.outbox.>"));
         assert!(sub_allow.contains(&"$JS.API.>"));
     }
 

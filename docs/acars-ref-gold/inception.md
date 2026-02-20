@@ -7,9 +7,9 @@ Ce rapport technique propose une architecture de rupture, baptisée OpenLink, co
 
 L'architecture OpenLink introduit trois innovations majeures :
 
-Ségregation Stricte des Réseaux : Utilisation des "Accounts" NATS pour isoler hermétiquement les flux de données de VATSIM, IVAO et des compagnies aériennes virtuelles (VA), résolvant définitivement les problèmes de collision d'espaces de noms.
+Ségregation Stricte des Réseaux : Utilisation des "Accounts" NATS pour isoler hermétiquement les flux de données de DEMONETWORK, IVAO et des compagnies aériennes virtuelles (VA), résolvant définitivement les problèmes de collision d'espaces de noms.
 
-Identité Fédérée : Remplacement des codes de connexion statiques par une authentification OAuth2/OIDC dynamique, déléguant la confiance aux fournisseurs d'identité des réseaux (VATSIM Connect, IVAO Login) et assurant une non-répudiation forte.
+Identité Fédérée : Remplacement des codes de connexion statiques par une authentification OAuth2/OIDC dynamique, déléguant la confiance aux fournisseurs d'identité des réseaux (DEMONETWORK Connect, IVAO Login) et assurant une non-répudiation forte.
 
 Interopérabilité Standardisée : Adoption de schémas de données JSON stricts, inspirés des normes ARINC 633 et 623, transportés via WebSockets pour garantir une compatibilité totale avec les environnements contraints (WASM) des simulateurs modernes.
 
@@ -29,7 +29,7 @@ Latence Induite : Un message urgent envoyé par un contrôleur (ex: "CLIMB IMMED
 
 Gaspillage de Ressources : Statistiquement, plus de 95% des requêtes de polling retournent une réponse vide ("No messages"). Cela génère un trafic réseau inutile et une charge CPU serveur disproportionnée pour gérer l'établissement et la fermeture des connexions TCP/TLS.
 
-Le Phénomène du "Thundering Herd" : Lors d'événements majeurs comme le "Cross the Pond" sur VATSIM, des milliers de clients se connectent simultanément. Si le serveur ralentit, les clients ont tendance à réessayer plus agressivement, saturant davantage le système et provoquant des pannes en cascade.   
+Le Phénomène du "Thundering Herd" : Lors d'événements majeurs comme le "Cross the Pond" sur DEMONETWORK, des milliers de clients se connectent simultanément. Si le serveur ralentit, les clients ont tendance à réessayer plus agressivement, saturant davantage le système et provoquant des pannes en cascade.   
 
 1.2.2 Sécurité et Gestion de l'Identité
 L'authentification actuelle repose sur un "Logon Code" statique, généré une seule fois lors de l'inscription.   
@@ -38,12 +38,12 @@ Absence de Révocation : Si un code est compromis, il est difficile de le révoq
 
 Usurpation d'Identité : Rien n'empêche techniquement un utilisateur malveillant d'utiliser le code d'un autre pour envoyer des messages injurieux ou erronés.
 
-Manque de Lien avec les Réseaux : Il n'existe pas de lien cryptographique entre un compte Hoppie et un CID VATSIM ou VID IVAO. Un utilisateur banni d'un réseau pour comportement inapproprié peut continuer à utiliser le système ACARS, car les identités sont découplées.
+Manque de Lien avec les Réseaux : Il n'existe pas de lien cryptographique entre un compte Hoppie et un CID DEMONETWORK ou VID IVAO. Un utilisateur banni d'un réseau pour comportement inapproprié peut continuer à utiliser le système ACARS, car les identités sont découplées.
 
 1.2.3 Problèmes de Concurrence et d'Espace de Noms
 Le système actuel utilise un espace de noms plat pour les indicatifs (Callsigns).
 
-Collisions : Un contrôleur connecté en tant que EGLL_GND sur IVAO et un autre sur VATSIM partagent le même identifiant dans le système Hoppie. Cela conduit à des situations où des messages destinés à l'un sont reçus par l'autre, ou pire, par les deux.   
+Collisions : Un contrôleur connecté en tant que EGLL_GND sur IVAO et un autre sur DEMONETWORK partagent le même identifiant dans le système Hoppie. Cela conduit à des situations où des messages destinés à l'un sont reçus par l'autre, ou pire, par les deux.   
 
 Manque d'Isolation : Les tentatives de créer des sous-réseaux (VACC spécifiques, compagnies virtuelles) reposent souvent sur des conventions de nommage fragiles plutôt que sur une ségrégation technique réelle.
 
@@ -52,9 +52,9 @@ Pour concevoir un remplaçant viable, nous devons satisfaire les exigences suiva
 
 Architecture Événementielle (Event-Driven) : Abandonner le polling pour un modèle "Push". Le serveur doit notifier le client instantanément à l'arrivée d'un message.
 
-Ségregation Multi-Tenant Native : Le système doit supporter plusieurs réseaux (VATSIM, IVAO, PilotEdge, VAs privées) sur la même infrastructure, avec une étanchéité totale des données.
+Ségregation Multi-Tenant Native : Le système doit supporter plusieurs réseaux (DEMONETWORK, IVAO, PilotEdge, VAs privées) sur la même infrastructure, avec une étanchéité totale des données.
 
-Sécurité Fédérée (OAuth2) : L'authentification doit être déléguée aux fournisseurs d'identité de confiance (VATSIM Connect, IVAO API).
+Sécurité Fédérée (OAuth2) : L'authentification doit être déléguée aux fournisseurs d'identité de confiance (DEMONETWORK Connect, IVAO API).
 
 Compatibilité Technique (WASM/Web) : Le protocole de transport doit être compatible avec les environnements "sandboxés" des simulateurs modernes (Microsoft Flight Simulator via WASM) qui interdisent souvent les sockets TCP bruts.   
 
@@ -75,7 +75,7 @@ Latence	Faible	Très Faible (< 100µs)	Moyenne
 NATS surpasse systématiquement MQTT et RabbitMQ en débit et latence.
 
 Multi-Tenancy	Via ACLs (Complexe)	Natif (Accounts/Users)	Vhosts (Lourd)	
-NATS gère l'isolation par "Accounts" de manière native et légère, idéal pour séparer VATSIM/IVAO.
+NATS gère l'isolation par "Accounts" de manière native et légère, idéal pour séparer DEMONETWORK/IVAO.
 
 Persistance	Retained Msgs (Limité)	Streams (Logs persistants)	Queues durables	NATS JetStream permet de stocker l'historique des messages (Store-and-Forward) sans base de données externe.
 Transport Web	WebSockets	WebSockets	WebSockets (via plugin)	Égalité. Le support WebSocket est crucial pour le WASM MSFS.
@@ -104,22 +104,22 @@ Avantage : L'expérience utilisateur (connexion, handshake TLS) est instantanée
 La sécurité est l'une des lacunes majeures du système actuel. OpenLink adopte une approche où l'infrastructure ne stocke aucun mot de passe ("Zero Trust Identity").
 
 3.1 Intégration OAuth2 / OIDC
-L'authentification est déléguée aux fournisseurs d'identité (IdP) existants : VATSIM Connect  et IVAO Login API.   
+L'authentification est déléguée aux fournisseurs d'identité (IdP) existants : DEMONETWORK Connect  et IVAO Login API.   
 
 3.1.1 Le Flux d'Authentification (Workflow)
-Initiation : L'utilisateur lance son client ACARS (ou l'avion dans le simulateur). Il clique sur "Connexion VATSIM".
+Initiation : L'utilisateur lance son client ACARS (ou l'avion dans le simulateur). Il clique sur "Connexion DEMONETWORK".
 
-Redirection : Une fenêtre de navigateur s'ouvre vers le service d'authentification OpenLink (auth.openlink.net), qui redirige vers auth.vatsim.net.
+Redirection : Une fenêtre de navigateur s'ouvre vers le service d'authentification OpenLink (auth.openlink.net), qui redirige vers auth.demonetwork.net.
 
-Consentement : L'utilisateur se connecte sur VATSIM et autorise l'application OpenLink à accéder à ses données (Scopes: full_name, vatsim_details, email).
+Consentement : L'utilisateur se connecte sur DEMONETWORK et autorise l'application OpenLink à accéder à ses données (Scopes: full_name, demonetwork_details, email).
 
-Callback : VATSIM renvoie un code d'autorisation au service OpenLink.
+Callback : DEMONETWORK renvoie un code d'autorisation au service OpenLink.
 
-Échange de Token : Le service OpenLink échange ce code contre un Access Token VATSIM et récupère le profil utilisateur (CID, Rating, Division).
+Échange de Token : Le service OpenLink échange ce code contre un Access Token DEMONETWORK et récupère le profil utilisateur (CID, Rating, Division).
 
 Émission du Token NATS : C'est l'étape cruciale. Le service OpenLink génère un JWT NATS (User JWT) signé cryptographiquement. Ce token contient :
 
-L'identité NATS (Subject) dérivée du CID (ex: vatsim_810000).
+L'identité NATS (Subject) dérivée du CID (ex: demonetwork_810000).
 
 Les permissions Pub/Sub exactes (ex: droit de publier sur acars.uplink.810000 et souscrire à acars.downlink.810000).
 
@@ -133,24 +133,24 @@ L'utilisation des Accounts NATS permet de créer des silos étanches sur la mêm
 Structure des Comptes
 Account NATS	Description	Population	Isolation
 SYS	Système Interne	Services d'infra (Auth, Bridge, Metrics)	Accès total (Admin)
-VATSIM	Réseau VATSIM	Utilisateurs authentifiés via VATSIM Connect	Isolés des autres réseaux. Peuvent voir les services globaux (Météo).
+DEMONETWORK	Réseau DEMONETWORK	Utilisateurs authentifiés via DEMONETWORK Connect	Isolés des autres réseaux. Peuvent voir les services globaux (Météo).
 IVAO	Réseau IVAO	Utilisateurs authentifiés via IVAO API	Isolés des autres réseaux.
 VA_Private	Compagnies Virtuelles	Utilisateurs avec double authentification (VA + Réseau)	Espace privé pour les opérations internes (Dispatch, Chat compagnie).
 3.2.1 Exemple de Gestion des Collisions
-Si l'utilisateur BAW123 existe sur VATSIM et IVAO simultanément :
+Si l'utilisateur BAW123 existe sur DEMONETWORK et IVAO simultanément :
 
-Sur le compte NATS VATSIM, le client s'abonne au sujet acars.msg.BAW123.
+Sur le compte NATS DEMONETWORK, le client s'abonne au sujet acars.msg.BAW123.
 
 Sur le compte NATS IVAO, un autre client s'abonne au sujet acars.msg.BAW123.
 
-Grâce à l'isolation des comptes, un message envoyé à BAW123 dans le contexte VATSIM n'est jamais visible par le client IVAO, même si le nom du sujet est identique. Cela résout définitivement le problème de "crosstalk" observé sur Hoppie.   
+Grâce à l'isolation des comptes, un message envoyé à BAW123 dans le contexte DEMONETWORK n'est jamais visible par le client IVAO, même si le nom du sujet est identique. Cela résout définitivement le problème de "crosstalk" observé sur Hoppie.   
 
 3.3 Auth Callout : La Sécurité Dynamique
 Pour gérer les permissions fines (ex: un contrôleur qui ouvre une position), nous utiliserons la fonctionnalité Auth Callout de NATS 2.10+.   
 
 Au lieu de générer un JWT statique pour 24h, le serveur NATS peut interroger le service d'auth à chaque connexion.
 
-Si un contrôleur change de position (passe de EGLL_GND à EGLL_TWR), il demande une reconnexion. Le service d'auth vérifie sa position actuelle sur le réseau (via l'API de données VATSIM/IVAO) et met à jour ses permissions d'abonnement en temps réel.
+Si un contrôleur change de position (passe de EGLL_GND à EGLL_TWR), il demande une reconnexion. Le service d'auth vérifie sa position actuelle sur le réseau (via l'API de données DEMONETWORK/IVAO) et met à jour ses permissions d'abonnement en temps réel.
 
 4. Architecture de Données : Standards et Schémas
 L'une des plus grandes faiblesses du système actuel est l'utilisation de texte non structuré. OpenLink impose l'utilisation de JSON, validé par des schémas JSON Schema, et inspiré des standards aéronautiques ARINC.
@@ -169,7 +169,7 @@ JSON
   "routing": {
     "source": "BAW123",
     "target": "EGLL_GND",
-    "network": "VATSIM"
+    "network": "DEMONETWORK"
   },
   "type": "cpdlc.clearance.request",
   "payload": {... } // Contenu spécifique au type
@@ -271,7 +271,7 @@ C++
 auto acars = OpenLink::Client::Create("wss://api.openlink.net");
 
 // Authentification
-acars->Login(vatsim_token);
+acars->Login(demonetwork_token);
 
 // Abonnement aux messages entrants
 acars->OnMessage("cpdlc.dcl.response",(const Json& payload) {
@@ -348,7 +348,7 @@ JSON Schema pour la structure des données,
 
 Prochaines Étapes Recommandées :
 
-Proof of Concept (PoC) : Déployer un cluster NATS de test et développer un client web minimal capable d'envoyer/recevoir un message structuré via WebSocket et authentification VATSIM Sandbox.
+Proof of Concept (PoC) : Déployer un cluster NATS de test et développer un client web minimal capable d'envoyer/recevoir un message structuré via WebSocket et authentification DEMONETWORK Sandbox.
 
 Formation du Groupe de Travail : Réunir les développeurs clés (FlyByWire, Fenix, vPilot, Swift) pour valider les schémas JSON (ARINC mapping).
 
@@ -374,7 +374,7 @@ Hoppie's ACARS Registration
 S'ouvre dans une nouvelle fenêtre
 
 reddit.com
-VATSIM sending information through Hoppie? - Reddit
+DEMONETWORK sending information through Hoppie? - Reddit
 S'ouvre dans une nouvelle fenêtre
 
 docs.nats.io
@@ -409,12 +409,12 @@ vpsbenchmarks.com
 Best VPS 2024 under $25 - VPSBenchmarks
 S'ouvre dans une nouvelle fenêtre
 
-vatsim.dev
-Connect / OAuth2 - VATSIM.dev
+demonetwork.dev
+Connect / OAuth2 - DEMONETWORK.dev
 S'ouvre dans une nouvelle fenêtre
 
-vatsim.dev
-APIs - VATSIM.dev
+demonetwork.dev
+APIs - DEMONETWORK.dev
 S'ouvre dans une nouvelle fenêtre
 
 wiki.ivao.aero

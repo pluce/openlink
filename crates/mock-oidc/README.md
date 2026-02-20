@@ -1,7 +1,7 @@
 # Mock OIDC Provider
 
 A minimal **Identity Provider (IDP)** for local development and testing of OpenLink authentication flows.
-Simulates an OAuth2 / OIDC compliant server (like VATSIM Connect or IVAO SSO).
+Simulates an OAuth2 / OIDC compliant server (like DEMONETWORK Connect or IVAO SSO).
 
 ## Purpose
 - Accepts client redirect requests.
@@ -15,9 +15,9 @@ This allows the CLI to simulate any network address without pre-registration.
 
 | Code | Role | Sub (Subject ID) | Name | Email |
 |------|------|------------------|------|-------|
-| `PILOT` | Pilot | `100000` | Captain Smith | `pilot@vatsim.net` |
-| `ATC` | ATC | `888888` | Generic ATC | `atc@vatsim.net` |
-| *<ANY_STRING>* | Custom | *<ANY_STRING>* | User *<ANY_STRING>* | *<ANY_STRING>@vatsim.net* |
+| `PILOT` | Pilot | `100000` | Captain Smith | `pilot@demonetwork.net` |
+| `ATC` | ATC | `888888` | Generic ATC | `atc@demonetwork.net` |
+| *<ANY_STRING>* | Custom | *<ANY_STRING>* | User *<ANY_STRING>* | *<ANY_STRING>@demonetwork.net* |
 
 **Example:**
 Requesting a token with `code="AFR123"` will generate an ID Token for a user with `sub="AFR123"` and `name="User AFR123"`.

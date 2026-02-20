@@ -20,7 +20,7 @@ Use these subject patterns:
 
 Parameters:
 
-- `{network}`: logical network (example: `vatsim`)
+- `{network}`: logical network (example: `demonetwork`)
 - `{address}`: runtime client address on that network
 
 ## Required client behavior
@@ -46,10 +46,10 @@ On disconnect/reconnect:
 
 ## Example subject resolution
 
-For `network=vatsim` and `address=CID_AFR123`:
+For `network=demonetwork` and `address=CID_AFR123`:
 
-- outbox: `openlink.v1.vatsim.outbox.CID_AFR123`
-- inbox: `openlink.v1.vatsim.inbox.CID_AFR123`
+- outbox: `openlink.v1.demonetwork.outbox.CID_AFR123`
+- inbox: `openlink.v1.demonetwork.inbox.CID_AFR123`
 
 ## Common mistakes
 

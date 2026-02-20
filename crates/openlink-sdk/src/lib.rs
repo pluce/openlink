@@ -22,7 +22,7 @@
 //! use openlink_sdk::OpenLinkClient;
 //!
 //! # async fn run() -> Result<(), openlink_sdk::SdkError> {
-//! let network = NetworkId::new("vatsim");
+//! let network = NetworkId::new("demonetwork");
 //! let client = OpenLinkClient::connect_with_authorization_code(
 //!     "nats://localhost:4222",
 //!     "http://auth.example.com",

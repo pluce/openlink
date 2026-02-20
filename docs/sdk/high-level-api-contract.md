@@ -31,6 +31,28 @@ The SDK should enforce or provide:
 - dialogue helpers (closing, standby, suggestions),
 - catalog version exposure.
 
+## Server authority and SDK boundary
+
+The SDK contract should clearly reflect server-authoritative protocol behavior.
+
+### Server-side business logic (OpenLink)
+
+OpenLink server remains the source of truth for:
+
+- CPDLC session state,
+- dialogue progression and closure state,
+- protocol-level consistency across participants.
+
+### Client-side SDK behavior
+
+The SDK should help integrators:
+
+- consume authoritative session updates,
+- map protocol state into UI-friendly models,
+- avoid duplicating protocol state machines locally.
+
+SDK APIs should make this boundary explicit so product teams implement UX logic, not protocol ownership.
+
 ## UI-oriented capabilities
 
 For cockpit/ATC usability, the SDK should provide:

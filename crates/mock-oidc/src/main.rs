@@ -124,7 +124,7 @@ struct IdTokenClaims {
     // Custom claims
     name: String,
     email: String,
-    vatsim_cid: String, 
+    demonetwork_cid: String, 
 }
 
 async fn token(Form(req): Form<TokenRequest>) -> Json<Value> {
@@ -132,13 +132,13 @@ async fn token(Form(req): Form<TokenRequest>) -> Json<Value> {
 
     // Map Code to Identity
     let (sub, name, email) = match req.code.as_str() {
-        "PILOT" => ("100000".to_string(), "Captain Smith".to_string(), "pilot@vatsim.net".to_string()),
-        "ATC" => ("888888".to_string(), "Generic ATC".to_string(), "atc@vatsim.net".to_string()),
-        "ATC_EGLL" => ("777777".to_string(), "Generic ATC".to_string(), "atc@vatsim.net".to_string()),
+        "PILOT" => ("100000".to_string(), "Captain Smith".to_string(), "pilot@demonetwork.net".to_string()),
+        "ATC" => ("888888".to_string(), "Generic ATC".to_string(), "atc@demonetwork.net".to_string()),
+        "ATC_EGLL" => ("777777".to_string(), "Generic ATC".to_string(), "atc@demonetwork.net".to_string()),
 
         // Dynamic Fallback: use the provided code as the identity
         // This allows the CLI to request tokens for any network address
-        other => (other.to_string(), format!("User {}", other), format!("{}@vatsim.net", other.to_lowercase())),
+        other => (other.to_string(), format!("User {}", other), format!("{}@demonetwork.net", other.to_lowercase())),
     };
 
     let now = Utc::now();
@@ -152,7 +152,7 @@ async fn token(Form(req): Form<TokenRequest>) -> Json<Value> {
         iat: now.timestamp(),
         name: name.to_string(),
         email: email.to_string(),
-        vatsim_cid: sub.to_string(), 
+        demonetwork_cid: sub.to_string(), 
     };
 
     let keys = KEYS.get().unwrap();
@@ -164,8 +164,8 @@ async fn token(Form(req): Form<TokenRequest>) -> Json<Value> {
 
     let id_token = encode(&header, &claims, &keys.encoding_key).unwrap();
     
-    // Access token - keeping the "vatsim_" prefix for the naive auth service for now
-    let access_token = format!("vatsim_{}", sub); 
+    // Access token format consumed by openlink-auth
+    let access_token = format!("demonetwork_{}", sub); 
 
     Json(json!({
         "access_token": access_token, 

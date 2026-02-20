@@ -36,20 +36,20 @@ const VERSION: &str = "v1";
 /// use openlink_models::{NetworkId, NetworkAddress};
 /// use openlink_sdk::NatsSubjects;
 ///
-/// let network = NetworkId::new("vatsim");
+/// let network = NetworkId::new("demonetwork");
 /// let station = NetworkAddress::new("LFPG");
 ///
 /// assert_eq!(
 ///     NatsSubjects::outbox(&network, &station),
-///     "openlink.v1.vatsim.outbox.LFPG",
+///     "openlink.v1.demonetwork.outbox.LFPG",
 /// );
 /// assert_eq!(
 ///     NatsSubjects::inbox(&network, &station),
-///     "openlink.v1.vatsim.inbox.LFPG",
+///     "openlink.v1.demonetwork.inbox.LFPG",
 /// );
 /// assert_eq!(
 ///     NatsSubjects::outbox_wildcard(&network),
-///     "openlink.v1.vatsim.outbox.>",
+///     "openlink.v1.demonetwork.outbox.>",
 /// );
 /// ```
 pub struct NatsSubjects;
@@ -109,7 +109,7 @@ impl NatsSubjects {
 
     /// Extract the sender address from an outbox subject.
     ///
-    /// Given `"openlink.v1.vatsim.outbox.LFPG"` returns `Some("LFPG")`.
+    /// Given `"openlink.v1.demonetwork.outbox.LFPG"` returns `Some("LFPG")`.
     /// Returns `None` if the subject does not match the expected pattern.
     pub fn parse_outbox_sender(subject: &str) -> Option<&str> {
         let parts: Vec<&str> = subject.splitn(5, '.').collect();
@@ -122,7 +122,7 @@ impl NatsSubjects {
 
     /// Extract the recipient address from an inbox subject.
     ///
-    /// Given `"openlink.v1.vatsim.inbox.AFR123"` returns `Some("AFR123")`.
+    /// Given `"openlink.v1.demonetwork.inbox.AFR123"` returns `Some("AFR123")`.
     pub fn parse_inbox_recipient(subject: &str) -> Option<&str> {
         let parts: Vec<&str> = subject.splitn(5, '.').collect();
         if parts.len() == 5 && parts[0] == "openlink" && parts[3] == "inbox" {
@@ -142,7 +142,7 @@ mod tests {
     use super::*;
 
     fn net() -> NetworkId {
-        NetworkId::new("vatsim")
+        NetworkId::new("demonetwork")
     }
 
     fn addr(s: &str) -> NetworkAddress {
@@ -155,7 +155,7 @@ mod tests {
     fn outbox_subject() {
         assert_eq!(
             NatsSubjects::outbox(&net(), &addr("AFR123")),
-            "openlink.v1.vatsim.outbox.AFR123",
+            "openlink.v1.demonetwork.outbox.AFR123",
         );
     }
 
@@ -163,7 +163,7 @@ mod tests {
     fn inbox_subject() {
         assert_eq!(
             NatsSubjects::inbox(&net(), &addr("LFPG")),
-            "openlink.v1.vatsim.inbox.LFPG",
+            "openlink.v1.demonetwork.inbox.LFPG",
         );
     }
 
@@ -171,7 +171,7 @@ mod tests {
     fn outbox_wildcard_subject() {
         assert_eq!(
             NatsSubjects::outbox_wildcard(&net()),
-            "openlink.v1.vatsim.outbox.>",
+            "openlink.v1.demonetwork.outbox.>",
         );
     }
 
@@ -179,7 +179,7 @@ mod tests {
     fn inbox_wildcard_subject() {
         assert_eq!(
             NatsSubjects::inbox_wildcard(&net()),
-            "openlink.v1.vatsim.inbox.>",
+            "openlink.v1.demonetwork.inbox.>",
         );
     }
 
@@ -189,7 +189,7 @@ mod tests {
     fn kv_cpdlc_sessions_bucket() {
         assert_eq!(
             NatsSubjects::kv_cpdlc_sessions(&net()),
-            "openlink-v1-vatsim-cpdlc-sessions",
+            "openlink-v1-demonetwork-cpdlc-sessions",
         );
     }
 
@@ -197,7 +197,7 @@ mod tests {
     fn kv_station_registry_bucket() {
         assert_eq!(
             NatsSubjects::kv_station_registry(&net()),
-            "openlink-v1-vatsim-station-registry",
+            "openlink-v1-demonetwork-station-registry",
         );
     }
 
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn parse_outbox_sender_valid() {
         assert_eq!(
-            NatsSubjects::parse_outbox_sender("openlink.v1.vatsim.outbox.AFR123"),
+            NatsSubjects::parse_outbox_sender("openlink.v1.demonetwork.outbox.AFR123"),
             Some("AFR123"),
         );
     }
@@ -215,7 +215,7 @@ mod tests {
     fn parse_outbox_sender_invalid() {
         assert_eq!(NatsSubjects::parse_outbox_sender("bad.subject"), None);
         assert_eq!(
-            NatsSubjects::parse_outbox_sender("openlink.v1.vatsim.inbox.AFR123"),
+            NatsSubjects::parse_outbox_sender("openlink.v1.demonetwork.inbox.AFR123"),
             None,
         );
     }

@@ -31,6 +31,15 @@ OpenLink is built around a clear split between infrastructure responsibilities a
 - broadcasts session updates to participants,
 - provides protocol catalog/reference used by SDKs and raw integrations.
 
+Business logic handled by the server includes:
+
+- CPDLC session lifecycle (logon, connection, transfer, end-service),
+- authoritative active/inactive connection state for each participant,
+- dialogue state transitions (opened/waiting/closed based on exchanged messages),
+- MIN/MRN assignment/validation and cross-message consistency,
+- session snapshot replay on reconnect/online,
+- server-side normalization or protocol safety rules when required.
+
 ### What integrators must implement
 
 - connect product runtime to NATS,
@@ -38,6 +47,9 @@ OpenLink is built around a clear split between infrastructure responsibilities a
 - render operational UI workflows (ATC/DCDU, dialogue status, reply actions),
 - enforce local validation and user flow guardrails,
 - handle reconnect and restore local runtime behavior.
+
+In short: clients should **project** protocol state, not **own** it.
+Your client consumes authoritative session updates from OpenLink and adapts UI behavior accordingly.
 
 ### End-to-end flow (simplified)
 
@@ -96,7 +108,7 @@ You must track two identity spaces at the same time:
 Example:
 
 - Operational: `AFR123` / `AY213`
-- Runtime: `vatsim` / `CID_AFR123`
+- Runtime: `demonetwork` / `CID_AFR123`
 
 ## Dialogues and responses
 
@@ -110,6 +122,12 @@ From the catalog, you can derive:
 - constrained suggested reply sets.
 
 OpenLink provides the protocol contract and server-side state authority; integrators apply these rules in product UX.
+
+Practical implication for client implementation:
+
+- use message `response_attr` to show valid user actions,
+- use authoritative session/dialogue updates to drive state badges and interaction locks,
+- avoid local protocol state machines that can diverge from server truth.
 
 ## What stays outside client scope
 
