@@ -240,11 +240,17 @@ pub enum ResponseAttribute {
 /// intent-level actions only.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CpdlcResponseIntent {
+    /// WILCO short response.
     Wilco,
+    /// UNABLE short response.
     Unable,
+    /// STANDBY short response.
     Standby,
+    /// ROGER short response.
     Roger,
+    /// AFFIRM short response.
     Affirm,
+    /// NEGATIVE short response.
     Negative,
 }
 
@@ -373,29 +379,53 @@ impl ResponseAttribute {
 /// The kind of argument expected in a CPDLC message template placeholder.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ArgType {
+    /// Flight level argument (e.g. FL350).
     Level,
+    /// Speed argument.
     Speed,
+    /// Time argument.
     Time,
+    /// Position argument (fix, waypoint, etc.).
     Position,
+    /// Direction argument (left/right, north/south, etc.).
     Direction,
+    /// Heading/course in degrees.
     Degrees,
+    /// Distance argument.
     Distance,
+    /// Route clearance text.
     RouteClearance,
+    /// Procedure name (SID/STAR/approach, etc.).
     ProcedureName,
+    /// Unit name (ATC unit).
     UnitName,
+    /// Facility designation.
     FacilityDesignation,
+    /// Frequency value.
     Frequency,
+    /// Squawk/transponder code.
     Code,
+    /// ATIS code.
     AtisCode,
+    /// Error information text.
     ErrorInfo,
+    /// Free text payload.
     FreeText,
+    /// Vertical rate value.
     VerticalRate,
+    /// Altimeter setting value.
     Altimeter,
+    /// Leg type argument.
     LegType,
+    /// Position report text payload.
     PositionReport,
+    /// Remaining fuel value.
     RemainingFuel,
+    /// Persons on board count/value.
     PersonsOnBoard,
+    /// Speed type qualifier.
     SpeedType,
+    /// Departure clearance text.
     DepartureClearance,
 }
 
@@ -407,29 +437,53 @@ pub enum ArgType {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum CpdlcArgument {
+    /// Flight level argument.
     Level(FlightLevel),
+    /// Speed argument.
     Speed(String),
+    /// Time argument.
     Time(String),
+    /// Position argument.
     Position(String),
+    /// Direction argument.
     Direction(String),
+    /// Degrees argument.
     Degrees(u16),
+    /// Distance argument.
     Distance(String),
+    /// Route clearance text.
     RouteClearance(String),
+    /// Procedure name.
     ProcedureName(String),
+    /// Unit name.
     UnitName(String),
+    /// Facility designation.
     FacilityDesignation(String),
+    /// Frequency value.
     Frequency(String),
+    /// Squawk/transponder code.
     Code(String),
+    /// ATIS code.
     AtisCode(String),
+    /// Error information.
     ErrorInfo(String),
+    /// Free text payload.
     FreeText(String),
+    /// Vertical rate value.
     VerticalRate(String),
+    /// Altimeter setting.
     Altimeter(String),
+    /// Leg type value.
     LegType(String),
+    /// Position report payload.
     PositionReport(String),
+    /// Remaining fuel value.
     RemainingFuel(String),
+    /// Persons on board value.
     PersonsOnBoard(String),
+    /// Speed type qualifier.
     SpeedType(String),
+    /// Departure clearance payload.
     DepartureClearance(String),
 }
 

@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 //! # OpenLink SDK
 //!
 //! Reference SDK for connecting to the **OpenLink** aviation messaging

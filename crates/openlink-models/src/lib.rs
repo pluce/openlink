@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 //! # OpenLink Models
 //!
 //! Core data types for the OpenLink datalink simulation network.
