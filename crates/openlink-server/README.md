@@ -65,6 +65,11 @@ Subject and bucket names are defined centrally in `openlink-sdk::NatsSubjects`:
 | Env var    | Default                   | Description |
 |------------|---------------------------|-------------|
 | `NATS_URL` | `nats://localhost:4222`   | NATS server URL. |
+| `AUTH_URL` | `http://localhost:3001`   | OpenLink auth service URL used to fetch server JWTs. |
+| `SERVER_SECRET` | `openlink-dev-secret` | Shared secret used by the server to authenticate with auth service. |
+| `PRESENCE_LEASE_TTL_SECONDS` | `90` | Station heartbeat lease TTL; after this delay without refresh, station is marked offline. |
+| `PRESENCE_SWEEP_INTERVAL_SECONDS` | `20` | Frequency of stale presence sweep. |
+| `AUTO_END_SERVICE_ON_STATION_OFFLINE` | `true` | When `true`, server sends automatic CPDLC `END SERVICE` to aircraft when a station goes offline. |
 | `RUST_LOG` | `info`                    | Logging level filter (uses `tracing-subscriber` `EnvFilter`). |
 
 ## Running

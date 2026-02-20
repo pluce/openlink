@@ -1,8 +1,10 @@
 //! Core server that subscribes to outbox messages and routes them to destination inboxes.
 
 use anyhow::Result;
+use chrono::Duration as ChronoDuration;
 use futures::StreamExt;
 use std::collections::HashSet;
+use std::time::Duration as StdDuration;
 use openlink_models::{
     AcarsEndpointCallsign, AcarsEnvelope, MetaMessage, NetworkAddress, NetworkId,
     OpenLinkEnvelope, OpenLinkMessage, OpenLinkRouting, StationStatus,
@@ -12,6 +14,23 @@ use tracing::{debug, error, info, warn};
 
 use crate::acars::{CPDLCServer, CPDLCSession};
 use crate::station_registry;
+
+#[derive(Debug, Clone, Copy)]
+pub struct PresenceConfig {
+    pub lease_ttl_seconds: i64,
+    pub sweep_interval_seconds: u64,
+    pub auto_end_service_on_station_offline: bool,
+}
+
+impl Default for PresenceConfig {
+    fn default() -> Self {
+        Self {
+            lease_ttl_seconds: 90,
+            sweep_interval_seconds: 20,
+            auto_end_service_on_station_offline: true,
+        }
+    }
+}
 
 /// The main server that listens for outbound messages on a single network
 /// and routes them to the correct destination inbox.
@@ -23,6 +42,7 @@ pub struct OpenLinkServer {
     client: OpenLinkClient,
     cpdlc_server: CPDLCServer,
     station_registry: station_registry::StationRegistry,
+    presence_config: PresenceConfig,
 }
 
 impl OpenLinkServer {
@@ -36,6 +56,7 @@ impl OpenLinkServer {
         auth_url: &str,
         server_secret: &str,
         clean: bool,
+        presence_config: PresenceConfig,
     ) -> Result<Self> {
         let client =
             OpenLinkClient::connect_as_server(nats_url, auth_url, server_secret, &network_id)
@@ -53,6 +74,7 @@ impl OpenLinkServer {
             client,
             cpdlc_server,
             station_registry,
+            presence_config,
         })
     }
 
@@ -61,7 +83,14 @@ impl OpenLinkServer {
     /// station's inbox.
     pub async fn run(&self) {
         let subject = NatsSubjects::outbox_wildcard(&self.network_id);
-        info!(network = %self.network_id, %subject, "server listening");
+        info!(
+            network = %self.network_id,
+            %subject,
+            lease_ttl_seconds = self.presence_config.lease_ttl_seconds,
+            sweep_interval_seconds = self.presence_config.sweep_interval_seconds,
+            auto_end_service_on_station_offline = self.presence_config.auto_end_service_on_station_offline,
+            "server listening"
+        );
 
         let mut subscription = match self.client.subscribe_all_outbox().await {
             Ok(sub) => sub,
@@ -71,62 +100,102 @@ impl OpenLinkServer {
             }
         };
 
-        while let Some(message) = subscription.next().await {
-            let envelope = match serde_json::from_slice::<OpenLinkEnvelope>(&message.payload) {
-                Ok(env) => env,
-                Err(e) => {
-                    warn!(error = %e, "ignoring malformed envelope");
-                    continue;
-                }
-            };
+        let ttl = ChronoDuration::seconds(self.presence_config.lease_ttl_seconds.max(1));
+        let mut presence_ticker = tokio::time::interval(StdDuration::from_secs(
+            self.presence_config.sweep_interval_seconds.max(1),
+        ));
 
-            let (destination_station, maybe_session, forward_envelope) = match envelope.payload {
-                OpenLinkMessage::Meta(ref meta) => {
-                    debug!(?meta, "received meta message");
-                    let result = self.handle_meta_message(meta, &envelope).await;
-                    match result {
-                        Ok(dest) => (dest, None, envelope.clone()),
+        loop {
+            tokio::select! {
+                maybe_message = subscription.next() => {
+                    let Some(message) = maybe_message else {
+                        break;
+                    };
+
+                    let envelope = match serde_json::from_slice::<OpenLinkEnvelope>(&message.payload) {
+                        Ok(env) => env,
                         Err(e) => {
-                            warn!(error = %e, "handler returned error");
+                            warn!(error = %e, "ignoring malformed envelope");
                             continue;
+                        }
+                    };
+
+                    let (destination_station, maybe_session, forward_envelope) = match envelope.payload {
+                        OpenLinkMessage::Meta(ref meta) => {
+                            debug!(?meta, "received meta message");
+                            let result = self.handle_meta_message(meta, &envelope).await;
+                            match result {
+                                Ok(dest) => (dest, None, envelope.clone()),
+                                Err(e) => {
+                                    warn!(error = %e, "handler returned error");
+                                    continue;
+                                }
+                            }
+                        }
+                        OpenLinkMessage::Acars(ref acars) => {
+                            debug!(?acars, "received ACARS message");
+                            match self.handle_acars_message(acars, &envelope).await {
+                                Ok((dest, session, modified_env)) => (dest, session, modified_env),
+                                Err(e) => {
+                                    warn!(error = %e, "handler returned error");
+                                    continue;
+                                }
+                            }
+                        }
+                    };
+
+                    // Forward the (possibly modified) message to the destination station
+                    if let Some(ref dest) = destination_station {
+                        debug!(?dest, "forwarding to destination station");
+                        let mut transferred = forward_envelope;
+                        transferred.routing = OpenLinkRouting {
+                            source: envelope.routing.destination.clone(),
+                            destination: openlink_models::OpenLinkRoutingEndpoint::Address(
+                                self.network_id.clone(),
+                                dest.network_address.clone(),
+                            ),
+                        };
+                        if let Err(e) = self
+                            .client
+                            .send_to_station(&dest.network_address, &transferred)
+                            .await
+                        {
+                            error!(error = %e, "failed to forward message");
+                        }
+                    }
+
+                    // Broadcast SessionUpdate to both parties if session was mutated
+                    if let Some(ref session) = maybe_session {
+                        self.broadcast_session_update(session, &envelope).await;
+                    }
+                }
+                _ = presence_ticker.tick() => {
+                    match self.station_registry.expire_stale_online(ttl).await {
+                        Ok(expired) if !expired.is_empty() => {
+                            for entry in expired {
+                                info!(network = %self.network_id, station = %entry.station_id, callsign = %entry.acars_endpoint.callsign, "presence lease expired: station marked offline");
+                                if let Err(e) = self
+                                    .handle_station_offline(
+                                        &entry.acars_endpoint.callsign,
+                                        format!("presence-expire-{}", entry.station_id),
+                                    )
+                                    .await
+                                {
+                                    warn!(
+                                        error = %e,
+                                        station = %entry.station_id,
+                                        callsign = %entry.acars_endpoint.callsign,
+                                        "failed to process station offline transition"
+                                    );
+                                }
+                            }
+                        }
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(network = %self.network_id, error = %e, "presence sweeper failed");
                         }
                     }
                 }
-                OpenLinkMessage::Acars(ref acars) => {
-                    debug!(?acars, "received ACARS message");
-                    match self.handle_acars_message(acars, &envelope).await {
-                        Ok((dest, session, modified_env)) => (dest, session, modified_env),
-                        Err(e) => {
-                            warn!(error = %e, "handler returned error");
-                            continue;
-                        }
-                    }
-                }
-            };
-
-            // Forward the (possibly modified) message to the destination station
-            if let Some(ref dest) = destination_station {
-                debug!(?dest, "forwarding to destination station");
-                let mut transferred = forward_envelope;
-                transferred.routing = OpenLinkRouting {
-                    source: envelope.routing.destination.clone(),
-                    destination: openlink_models::OpenLinkRoutingEndpoint::Address(
-                        self.network_id.clone(),
-                        dest.network_address.clone(),
-                    ),
-                };
-                if let Err(e) = self
-                    .client
-                    .send_to_station(&dest.network_address, &transferred)
-                    .await
-                {
-                    error!(error = %e, "failed to forward message");
-                }
-            }
-
-            // Broadcast SessionUpdate to both parties if session was mutated
-            if let Some(ref session) = maybe_session {
-                self.broadcast_session_update(session, &envelope).await;
             }
         }
     }
@@ -149,9 +218,7 @@ impl OpenLinkServer {
                         .await
                     {
                         error!(error = %e, "failed to update station status");
-                    }
-
-                    if *status == StationStatus::Online {
+                    } else if *status == StationStatus::Online {
                         if let Err(e) = self
                             .sync_session_snapshots_for_callsign(
                                 address,
@@ -162,11 +229,79 @@ impl OpenLinkServer {
                         {
                             warn!(error = %e, callsign = %acars_endpoint.callsign, "failed to sync session snapshots on station online");
                         }
+                    } else if *status == StationStatus::Offline
+                        && let Err(e) = self
+                            .handle_station_offline(
+                                &acars_endpoint.callsign,
+                                root.id.to_string(),
+                            )
+                            .await
+                    {
+                        warn!(
+                            error = %e,
+                            callsign = %acars_endpoint.callsign,
+                            "failed to process station offline transition"
+                        );
                     }
                 }
             }
         }
         Ok(None)
+    }
+
+    async fn handle_station_offline(
+        &self,
+        station_callsign: &AcarsEndpointCallsign,
+        correlation_id: String,
+    ) -> Result<()> {
+        let updated_sessions = self
+            .cpdlc_server
+            .terminate_sessions_for_station(station_callsign)
+            .await?;
+
+        for session in updated_sessions {
+            let aircraft = &session.aircraft;
+            let end_service_envelope = MessageBuilder::envelope(
+                MessageBuilder::cpdlc(
+                    aircraft.callsign.to_string(),
+                    aircraft.address.to_string(),
+                )
+                .from(station_callsign.to_string())
+                .to(aircraft.callsign.to_string())
+                .end_service()
+                .build(),
+            )
+            .source_server(self.network_id.as_str())
+            .destination_address(self.network_id.as_str(), "aircraft")
+            .correlation_id(correlation_id.clone())
+            .build();
+
+            if self.presence_config.auto_end_service_on_station_offline {
+                if let Ok(Some(aircraft_entry)) = self
+                    .station_registry
+                    .lookup_callsign(&aircraft.callsign)
+                    .await
+                {
+                    if let Err(e) = self
+                        .client
+                        .send_to_station(&aircraft_entry.network_address, &end_service_envelope)
+                        .await
+                    {
+                        warn!(
+                            error = %e,
+                            aircraft = %aircraft.callsign,
+                            station = %station_callsign,
+                            "failed to send automatic END SERVICE"
+                        );
+                    }
+                }
+            }
+
+            self.broadcast_session_update(&session, &end_service_envelope)
+                .await;
+        }
+
+        Ok(())
     }
 
     /// Route ACARS envelopes (currently only CPDLC) to the appropriate sub-handler.

@@ -5,6 +5,7 @@ mod persistence;
 mod i18n;
 
 use dioxus::prelude::*;
+use std::time::Duration;
 use uuid::Uuid;
 use state::{AppState, NatsClients, StationType, SetupFields};
 use components::tab_bar::TabBar;
@@ -71,9 +72,27 @@ fn App() -> Element {
                     app_state.write().active_tab = idx;
                 },
                 on_close: move |idx: usize| {
-                    // Remove NATS client for this tab
-                    let tab_id = app_state.read().tabs.get(idx).map(|t| t.id);
-                    if let Some(id) = tab_id {
+                    // Best-effort graceful offline before removing the client.
+                    let tab_info = {
+                        let state = app_state.read();
+                        state.tabs.get(idx).map(|t| (t.id, t.setup.clone(), t.phase.clone()))
+                    };
+                    if let Some((id, setup, phase)) = tab_info {
+                        if matches!(phase, state::TabPhase::Connected(_)) {
+                            let client = nats_clients.read().get(&id).cloned();
+                            if let Some(client) = client {
+                                spawn(async move {
+                                    let _ = nats_client::send_offline_status(
+                                        &client,
+                                        &setup.network_id,
+                                        &setup.network_address,
+                                        &setup.callsign,
+                                        &setup.acars_address,
+                                    )
+                                    .await;
+                                });
+                            }
+                        }
                         nats_clients.write().remove(&id);
                     }
                     app_state.write().close_tab(idx);
@@ -151,7 +170,11 @@ async fn spawn_inbox_listener(
 
     use futures::StreamExt;
     let mut subscriber = subscriber;
-    while let Some(message) = subscriber.next().await {
+    let mut heartbeat = tokio::time::interval(Duration::from_secs(25));
+    // First tick fires immediately by default; skip it because we already sent ONLINE at connect time.
+    heartbeat.tick().await;
+
+    loop {
         // Check if tab still exists (may have been closed)
         let tab_exists = app_state.read().tab_by_id(tab_id).is_some();
         if !tab_exists {
@@ -159,7 +182,24 @@ async fn spawn_inbox_listener(
             break;
         }
 
-        let raw = String::from_utf8_lossy(&message.payload).to_string();
+        tokio::select! {
+            _ = heartbeat.tick() => {
+                // Application-level presence heartbeat lease refresh.
+                let _ = nats_client::send_online_status(
+                    &client,
+                    &setup.network_id,
+                    &setup.network_address,
+                    &setup.callsign,
+                    &setup.acars_address,
+                )
+                .await;
+            }
+            maybe_message = subscriber.next() => {
+                let Some(message) = maybe_message else {
+                    break;
+                };
+
+                let raw = String::from_utf8_lossy(&message.payload).to_string();
         println!("[{tab_id}] Received: {}", &raw[..raw.len().min(120)]);
 
         let envelope = serde_json::from_slice::<openlink_models::OpenLinkEnvelope>(&message.payload).ok();
@@ -240,6 +280,8 @@ async fn spawn_inbox_listener(
             let mut s = app_state.write();
             if let Some(t) = s.tab_mut_by_id(tab_id) {
                 t.messages.push(received);
+            }
+        }
             }
         }
     }

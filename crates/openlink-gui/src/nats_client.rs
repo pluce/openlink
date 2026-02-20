@@ -41,6 +41,23 @@ pub async fn send_online_status(
         .map_err(|e| format!("{e}"))
 }
 
+/// Build and send a Meta::StationStatus(Offline) message.
+pub async fn send_offline_status(
+    client: &OpenLinkClient,
+    _network_id: &str,
+    network_address: &str,
+    callsign: &str,
+    acars_address: &str,
+) -> Result<(), String> {
+    let msg = MessageBuilder::station_status(network_address, callsign, acars_address)
+        .offline()
+        .build();
+    client
+        .send_to_server(msg)
+        .await
+        .map_err(|e| format!("{e}"))
+}
+
 
 /// Try to extract the CPDLC meta message from an envelope.
 /// Returns (cpdlc_envelope, meta_message, aircraft_acars_address).

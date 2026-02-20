@@ -766,6 +766,66 @@ impl CPDLCServer {
 
         Ok(sessions)
     }
+
+    /// Terminate this station from every relevant aircraft session.
+    ///
+    /// Returns all sessions that were mutated.
+    pub async fn terminate_sessions_for_station(
+        &self,
+        station_callsign: &AcarsEndpointCallsign,
+    ) -> Result<Vec<CPDLCSession>> {
+        let sessions = self.list_sessions_for_callsign(station_callsign).await?;
+        let mut updated_sessions = Vec::new();
+
+        for session in sessions {
+            let aircraft = session.aircraft.clone();
+            let updated = self
+                .get_and_update_session_for_aircraft(
+                    &aircraft,
+                    |maybe_session: Option<CPDLCSession>| {
+                        let station_callsign = station_callsign.clone();
+                        Box::pin(async move {
+                            let Some(mut existing) = maybe_session else {
+                                return Ok(None);
+                            };
+
+                            let was_relevant = existing
+                                .active_connection
+                                .as_ref()
+                                .is_some_and(|c| c.station.callsign == station_callsign)
+                                || existing
+                                    .inactive_connection
+                                    .as_ref()
+                                    .is_some_and(|c| c.station.callsign == station_callsign);
+
+                            if !was_relevant {
+                                return Ok(Some(existing));
+                            }
+
+                            existing.termination_request(&station_callsign)?;
+                            Ok(Some(existing))
+                        })
+                    },
+                )
+                .await?;
+
+            if let Some(updated) = updated {
+                let still_relevant = updated
+                    .active_connection
+                    .as_ref()
+                    .is_some_and(|c| c.station.callsign == *station_callsign)
+                    || updated
+                        .inactive_connection
+                        .as_ref()
+                        .is_some_and(|c| c.station.callsign == *station_callsign);
+                if !still_relevant {
+                    updated_sessions.push(updated);
+                }
+            }
+        }
+
+        Ok(updated_sessions)
+    }
 }
 
 

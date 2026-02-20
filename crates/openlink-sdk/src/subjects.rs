@@ -18,6 +18,7 @@
 //! ```text
 //! openlink-v1-{network}-cpdlc-sessions     ← CPDLC session store
 //! openlink-v1-{network}-station-registry    ← station registry store
+//! openlink-v1-{network}-station-callsign-index ← station callsign reverse index
 //! ```
 
 use openlink_models::{NetworkAddress, NetworkId};
@@ -101,6 +102,13 @@ impl NatsSubjects {
     /// KV bucket name for the station registry.
     pub fn kv_station_registry(network: &NetworkId) -> String {
         format!("openlink-{VERSION}-{network}-station-registry")
+    }
+
+    /// KV bucket name for the station callsign reverse index.
+    ///
+    /// Key: upper-cased callsign, Value: station identifier reference.
+    pub fn kv_station_callsign_index(network: &NetworkId) -> String {
+        format!("openlink-{VERSION}-{network}-station-callsign-index")
     }
 
     // ------------------------------------------------------------------
@@ -198,6 +206,14 @@ mod tests {
         assert_eq!(
             NatsSubjects::kv_station_registry(&net()),
             "openlink-v1-demonetwork-station-registry",
+        );
+    }
+
+    #[test]
+    fn kv_station_callsign_index_bucket() {
+        assert_eq!(
+            NatsSubjects::kv_station_callsign_index(&net()),
+            "openlink-v1-demonetwork-station-callsign-index",
         );
     }
 
