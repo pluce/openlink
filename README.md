@@ -41,6 +41,7 @@ For a complete integrator guide, see [docs/sdk/README.md](docs/sdk/README.md).
 | Crate | Path | Purpose |
 |---|---|---|
 | `openlink-cli` | [crates/openlink-cli](crates/openlink-cli) | Scriptable CLI client for CPDLC scenarios, protocol testing, and automation. |
+| `openlink-loadtest` | [crates/openlink-loadtest](crates/openlink-loadtest) | Load generator and benchmark tool (throughput/latency, multiple scenarios and scales). |
 | `openlink-gui` | [crates/openlink-gui](crates/openlink-gui) | Dioxus desktop demonstrator (ATC and DCDU views). |
 | `mock-oidc` | [crates/mock-oidc](crates/mock-oidc) | Local OIDC provider simulator used in development. |
 

@@ -3736,6 +3736,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "openlink-loadtest"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "futures",
+ "openlink-models",
+ "openlink-sdk",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "openlink-models"
 version = "0.1.0"
 dependencies = [

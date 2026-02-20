@@ -3,6 +3,7 @@ members = [
     "crates/openlink-models",
     "crates/openlink-auth",
     "crates/openlink-cli",
+    "crates/openlink-loadtest",
     "crates/openlink-sdk",
     "crates/openlink-gui",
     "crates/mock-oidc",
