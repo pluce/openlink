@@ -7,11 +7,12 @@
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
+use futures::TryStreamExt;
 use openlink_models::{
     AcarsEndpointCallsign, AcarsEnvelope, AcarsMessage, AcarsRoutingEndpoint,
-    CpdlcApplicationMessage, CpdlcConnectionPhase, CpdlcConnectionView, CpdlcDialogue,
+    CpdlcApplicationMessage, CpdlcArgument, CpdlcConnectionPhase, CpdlcConnectionView, CpdlcDialogue,
     CpdlcEnvelope, CpdlcMessageType, CpdlcMetaMessage, CpdlcSessionView, DialogueState,
-    NetworkId, OpenLinkEnvelope, OpenLinkMessage, ResponseAttribute,
+    NetworkId, OpenLinkEnvelope, OpenLinkMessage, ResponseAttribute, find_definition,
 };
 use tracing::{debug, info, warn};
 
@@ -255,6 +256,8 @@ impl CPDLCSession {
     /// In the aircraft view, `peer` is the ground-station callsign.
     pub fn to_aircraft_view(&self) -> CpdlcSessionView {
         CpdlcSessionView {
+            aircraft: Some(self.aircraft.callsign.clone()),
+            aircraft_address: Some(self.aircraft.address.clone()),
             active_connection: self.active_connection.as_ref().map(|c| {
                 c.to_view(&c.station.callsign)
             }),
@@ -278,6 +281,8 @@ impl CPDLCSession {
             }
         };
         CpdlcSessionView {
+            aircraft: Some(aircraft_callsign.clone()),
+            aircraft_address: Some(self.aircraft.address.clone()),
             active_connection: self.active_connection.as_ref().and_then(conn_to_view),
             inactive_connection: self.inactive_connection.as_ref().and_then(conn_to_view),
             next_data_authority: self.next_data_authority.as_ref().map(|nda| nda.callsign.clone()),
@@ -410,6 +415,19 @@ impl CPDLCServer {
                         maybe_session.ok_or_else(|| anyhow::anyhow!("no CPDLC session for aircraft"))?;
 
                     let mut msg = msg; // make mutable inside closure
+
+                    // Normalize free-text arguments server-side.
+                    for element in &mut msg.elements {
+                        if let Some(def) = find_definition(&element.id) {
+                            for (idx, arg_type) in def.args.iter().enumerate() {
+                                if matches!(arg_type, openlink_models::ArgType::FreeText)
+                                    && let Some(CpdlcArgument::FreeText(text)) = element.args.get_mut(idx)
+                                {
+                                    *text = text.to_uppercase();
+                                }
+                            }
+                        }
+                    }
 
                     // Determine if the source is the aircraft (downlink) or a station (uplink).
                     let is_downlink = source == session.aircraft.callsign;
@@ -713,6 +731,40 @@ impl CPDLCServer {
         }
 
         Ok(updated)
+    }
+
+    /// Return all sessions relevant to a participant callsign.
+    ///
+    /// A session is considered relevant if the callsign is either:
+    /// - the aircraft callsign owning the session,
+    /// - the active station callsign,
+    /// - the inactive station callsign.
+    pub async fn list_sessions_for_callsign(
+        &self,
+        callsign: &AcarsEndpointCallsign,
+    ) -> Result<Vec<CPDLCSession>> {
+        let mut keys = self.kv_sessions_store.keys().await?;
+        let mut sessions = Vec::new();
+
+        while let Some(key) = keys.try_next().await? {
+            if let Some(content) = self.kv_sessions_store.get(&key).await? {
+                let session: CPDLCSession = serde_json::from_slice(content.as_ref())?;
+                let relevant = session.aircraft.callsign == *callsign
+                    || session
+                        .active_connection
+                        .as_ref()
+                        .is_some_and(|c| c.station.callsign == *callsign)
+                    || session
+                        .inactive_connection
+                        .as_ref()
+                        .is_some_and(|c| c.station.callsign == *callsign);
+                if relevant {
+                    sessions.push(session);
+                }
+            }
+        }
+
+        Ok(sessions)
     }
 }
 

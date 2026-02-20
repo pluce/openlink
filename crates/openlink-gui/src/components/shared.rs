@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use openlink_models::{constrained_closing_reply_ids, AcarsMessage, CpdlcMessageType, CpdlcResponseIntent, OpenLinkMessage};
 use crate::state::ReceivedMessage;
 use crate::i18n::{use_locale, t};
 
@@ -18,9 +19,8 @@ pub fn StatusBadge(status: String) -> Element {
     }
 }
 
-/// Callback payload for responding to a message: (min_of_original, response_msg_id)
-/// Example: (0, "DM0") means respond with WILCO to message with MIN=0
-pub type RespondPayload = (u8, String);
+/// Callback payload for responding to a message: (min_of_original, semantic_intent)
+pub type RespondPayload = (u8, CpdlcResponseIntent);
 
 /// Reusable message list component showing human-readable CPDLC messages.
 /// When `on_respond` is provided, messages requiring a response display
@@ -29,6 +29,8 @@ pub type RespondPayload = (u8, String);
 pub fn MessageList(
     messages: Vec<ReceivedMessage>,
     #[props(default)] on_respond: Option<EventHandler<RespondPayload>>,
+    #[props(default)] on_respond_compose: Option<EventHandler<RespondPayload>>,
+    #[props(default)] on_suggested_reply: Option<EventHandler<u8>>,
 ) -> Element {
     let locale = use_locale();
     let tr = t(*locale.read());
@@ -47,6 +49,7 @@ pub fn MessageList(
                     let min = msg.min;
                     let mrn = msg.mrn;
                     let response_attr = msg.response_attr.clone();
+                    let envelope = msg.envelope.clone();
                     let item_class = if is_outgoing { "message-item message-sent" } else { "message-item" };
 
                     // Build MIN/MRN annotation string
@@ -58,22 +61,37 @@ pub fn MessageList(
                         if let Some(m) = mrn {
                             parts.push(format!("MRN={m}"));
                         }
-                        if let Some(ref attr) = response_attr {
-                            parts.push(attr.clone());
+                        if let Some(attr) = response_attr {
+                            parts.push(attr.to_string());
                         }
                         if parts.is_empty() { None } else { Some(format!("[{}]", parts.join(" "))) }
                     };
 
                     // Determine which response buttons to show for this message
-                    let response_buttons: Vec<(&str, &str)> = if !is_outgoing && on_respond.is_some() && !msg.responded {
-                        match response_attr.as_deref() {
-                            Some("WU") | Some("Y") => vec![("WILCO", "DM0"), ("UNABLE", "DM1"), ("STANDBY", "DM2")],
-                            Some("AN") => vec![("AFFIRM", "DM4"), ("NEGATIVE", "DM5"), ("STANDBY", "DM2")],
-                            Some("R") => vec![("ROGER", "DM3"), ("STANDBY", "DM2")],
-                            _ => vec![],
-                        }
+                    let response_buttons: Vec<CpdlcResponseIntent> = if !is_outgoing && on_respond.is_some() && !msg.responded {
+                        response_attr
+                            .map(CpdlcResponseIntent::for_attribute)
+                            .unwrap_or_default()
                     } else {
                         vec![]
+                    };
+
+                    let has_suggested_replies = if !is_outgoing && on_suggested_reply.is_some() && !msg.responded {
+                        envelope
+                            .as_ref()
+                            .and_then(|env| match &env.payload {
+                                OpenLinkMessage::Acars(acars) => match &acars.message {
+                                    AcarsMessage::CPDLC(cpdlc) => match &cpdlc.message {
+                                        CpdlcMessageType::Application(app) => app.elements.first().map(|e| e.id.as_str()),
+                                        _ => None,
+                                    },
+                                },
+                                _ => None,
+                            })
+                            .map(|id| !constrained_closing_reply_ids(id).is_empty())
+                            .unwrap_or(false)
+                    } else {
+                        false
                     };
 
                     rsx! {
@@ -98,22 +116,51 @@ pub fn MessageList(
                             if !response_buttons.is_empty() {
                                 if let Some(msg_min) = min {
                                     div { class: "message-response-buttons",
-                                        for (label, msg_id) in response_buttons.iter() {
+                                        for intent in response_buttons.iter() {
                                             {
-                                                let msg_id = msg_id.to_string();
-                                                let label = *label;
+                                                let intent = *intent;
                                                 let on_respond = on_respond.clone();
+                                                let on_respond_compose = on_respond_compose.clone();
                                                 rsx! {
-                                                    button {
-                                                        class: "message-response-btn",
-                                                        onclick: move |_| {
-                                                            if let Some(ref handler) = on_respond {
-                                                                handler.call((msg_min, msg_id.clone()));
+                                                    div { class: "message-response-action",
+                                                        button {
+                                                            class: "message-response-btn",
+                                                            onclick: move |_| {
+                                                                if let Some(ref handler) = on_respond {
+                                                                    handler.call((msg_min, intent));
+                                                                }
+                                                            },
+                                                            "{intent.label()}"
+                                                        }
+                                                        if on_respond_compose.is_some() {
+                                                            button {
+                                                                class: "message-response-plus-btn",
+                                                                title: "Respond + add",
+                                                                onclick: move |_| {
+                                                                    if let Some(ref handler) = on_respond_compose {
+                                                                        handler.call((msg_min, intent));
+                                                                    }
+                                                                },
+                                                                "+"
                                                             }
-                                                        },
-                                                        "{label}"
+                                                        }
                                                     }
                                                 }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if response_buttons.is_empty() && has_suggested_replies {
+                                if let Some(msg_min) = min {
+                                    if let Some(suggest_handler) = on_suggested_reply.clone() {
+                                        div { class: "message-response-buttons",
+                                            button {
+                                                class: "message-response-btn",
+                                                onclick: move |_| {
+                                                    suggest_handler.call(msg_min);
+                                                },
+                                                "SUGGESTED REPLIES"
                                             }
                                         }
                                     }

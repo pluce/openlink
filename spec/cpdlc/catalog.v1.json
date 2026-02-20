@@ -1,0 +1,2929 @@
+{
+  "schema_version": "cpdlc-catalog.v1",
+  "generated_at_utc": "2026-02-20T09:05:49.110131+00:00",
+  "messages": [
+    {
+      "id": "UM0",
+      "direction": "Uplink",
+      "template": "UNABLE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM1",
+      "direction": "Uplink",
+      "template": "STANDBY",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": true,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM2",
+      "direction": "Uplink",
+      "template": "REQUEST DEFERRED",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": true,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM3",
+      "direction": "Uplink",
+      "template": "ROGER",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM4",
+      "direction": "Uplink",
+      "template": "AFFIRM",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM5",
+      "direction": "Uplink",
+      "template": "NEGATIVE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM159",
+      "direction": "Uplink",
+      "template": "ERROR [error information]",
+      "args": [
+        "ErrorInfo"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM160",
+      "direction": "Uplink",
+      "template": "NEXT DATA AUTHORITY [facility designation]",
+      "args": [
+        "FacilityDesignation"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM161",
+      "direction": "Uplink",
+      "template": "END SERVICE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM162",
+      "direction": "Uplink",
+      "template": "MESSAGE NOT SUPPORTED BY THIS ATS UNIT",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM163",
+      "direction": "Uplink",
+      "template": "[facility designation]",
+      "args": [
+        "FacilityDesignation"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM211",
+      "direction": "Uplink",
+      "template": "REQUEST FORWARDED",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM227",
+      "direction": "Uplink",
+      "template": "LOGICAL ACKNOWLEDGEMENT",
+      "args": [],
+      "response_attr": "N",
+      "fans": false,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM19",
+      "direction": "Uplink",
+      "template": "MAINTAIN [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM20",
+      "direction": "Uplink",
+      "template": "CLIMB TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM21",
+      "direction": "Uplink",
+      "template": "AT [time] CLIMB TO [level]",
+      "args": [
+        "Time",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM22",
+      "direction": "Uplink",
+      "template": "AT [position] CLIMB TO [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM23",
+      "direction": "Uplink",
+      "template": "DESCEND TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM24",
+      "direction": "Uplink",
+      "template": "AT [time] DESCEND TO [level]",
+      "args": [
+        "Time",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM25",
+      "direction": "Uplink",
+      "template": "AT [position] DESCEND TO [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM26",
+      "direction": "Uplink",
+      "template": "CLIMB TO REACH [level] BY [time]",
+      "args": [
+        "Level",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM27",
+      "direction": "Uplink",
+      "template": "CLIMB TO REACH [level] BY [position]",
+      "args": [
+        "Level",
+        "Position"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM28",
+      "direction": "Uplink",
+      "template": "DESCEND TO REACH [level] BY [time]",
+      "args": [
+        "Level",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM29",
+      "direction": "Uplink",
+      "template": "DESCEND TO REACH [level] BY [position]",
+      "args": [
+        "Level",
+        "Position"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM30",
+      "direction": "Uplink",
+      "template": "MAINTAIN BLOCK [level] TO [level]",
+      "args": [
+        "Level",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM31",
+      "direction": "Uplink",
+      "template": "CLIMB TO AND MAINTAIN BLOCK [level] TO [level]",
+      "args": [
+        "Level",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM32",
+      "direction": "Uplink",
+      "template": "DESCEND TO AND MAINTAIN BLOCK [level] TO [level]",
+      "args": [
+        "Level",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM34",
+      "direction": "Uplink",
+      "template": "CRUISE CLIMB TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM36",
+      "direction": "Uplink",
+      "template": "EXPEDITE CLIMB TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM37",
+      "direction": "Uplink",
+      "template": "EXPEDITE DESCENT TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM38",
+      "direction": "Uplink",
+      "template": "IMMEDIATELY CLIMB TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM39",
+      "direction": "Uplink",
+      "template": "IMMEDIATELY DESCEND TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM46",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM47",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT OR ABOVE [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM48",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT OR BELOW [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM49",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT AND MAINTAIN [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM50",
+      "direction": "Uplink",
+      "template": "CROSS [position] BETWEEN [level] AND [level]",
+      "args": [
+        "Position",
+        "Level",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM51",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT [time]",
+      "args": [
+        "Position",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM52",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT OR BEFORE [time]",
+      "args": [
+        "Position",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM53",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT OR AFTER [time]",
+      "args": [
+        "Position",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM54",
+      "direction": "Uplink",
+      "template": "CROSS [position] BETWEEN [time] AND [time]",
+      "args": [
+        "Position",
+        "Time",
+        "Time"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM55",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT [speed]",
+      "args": [
+        "Position",
+        "Speed"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM61",
+      "direction": "Uplink",
+      "template": "CROSS [position] AT AND MAINTAIN [level] AT [speed]",
+      "args": [
+        "Position",
+        "Level",
+        "Speed"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM74",
+      "direction": "Uplink",
+      "template": "PROCEED DIRECT TO [position]",
+      "args": [
+        "Position"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM79",
+      "direction": "Uplink",
+      "template": "CLEARED TO [position] VIA [route clearance]",
+      "args": [
+        "Position",
+        "RouteClearance"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM80",
+      "direction": "Uplink",
+      "template": "CLEARED [route clearance]",
+      "args": [
+        "RouteClearance"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM81",
+      "direction": "Uplink",
+      "template": "CLEARED [procedure name]",
+      "args": [
+        "ProcedureName"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM82",
+      "direction": "Uplink",
+      "template": "CLEARED TO DEVIATE UP TO [distance] [direction] OF ROUTE",
+      "args": [
+        "Distance",
+        "Direction"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM92",
+      "direction": "Uplink",
+      "template": "HOLD AT [position] AS PUBLISHED MAINTAIN [level]",
+      "args": [
+        "Position",
+        "Level"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM64",
+      "direction": "Uplink",
+      "template": "OFFSET [distance] [direction] OF ROUTE",
+      "args": [
+        "Distance",
+        "Direction"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM67",
+      "direction": "Uplink",
+      "template": "PROCEED BACK ON ROUTE",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM94",
+      "direction": "Uplink",
+      "template": "TURN [direction] HEADING [degrees]",
+      "args": [
+        "Direction",
+        "Degrees"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM96",
+      "direction": "Uplink",
+      "template": "CONTINUE PRESENT HEADING",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM190",
+      "direction": "Uplink",
+      "template": "FLY HEADING [degrees]",
+      "args": [
+        "Degrees"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM215",
+      "direction": "Uplink",
+      "template": "TURN [direction] [degrees] DEGREES",
+      "args": [
+        "Direction",
+        "Degrees"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM106",
+      "direction": "Uplink",
+      "template": "MAINTAIN [speed]",
+      "args": [
+        "Speed"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM107",
+      "direction": "Uplink",
+      "template": "MAINTAIN PRESENT SPEED",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM108",
+      "direction": "Uplink",
+      "template": "MAINTAIN [speed] OR GREATER",
+      "args": [
+        "Speed"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM109",
+      "direction": "Uplink",
+      "template": "MAINTAIN [speed] OR LESS",
+      "args": [
+        "Speed"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM116",
+      "direction": "Uplink",
+      "template": "RESUME NORMAL SPEED",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM117",
+      "direction": "Uplink",
+      "template": "CONTACT [unit name] [frequency]",
+      "args": [
+        "UnitName",
+        "Frequency"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM120",
+      "direction": "Uplink",
+      "template": "MONITOR [unit name] [frequency]",
+      "args": [
+        "UnitName",
+        "Frequency"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM123",
+      "direction": "Uplink",
+      "template": "SQUAWK [code]",
+      "args": [
+        "Code"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM179",
+      "direction": "Uplink",
+      "template": "SQUAWK IDENT",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM129",
+      "direction": "Uplink",
+      "template": "REPORT MAINTAINING [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM128",
+      "direction": "Uplink",
+      "template": "REPORT LEAVING [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM130",
+      "direction": "Uplink",
+      "template": "REPORT PASSING [position]",
+      "args": [
+        "Position"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM132",
+      "direction": "Uplink",
+      "template": "REPORT POSITION",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM133",
+      "direction": "Uplink",
+      "template": "REPORT PRESENT LEVEL",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM135",
+      "direction": "Uplink",
+      "template": "CONFIRM ASSIGNED LEVEL",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM148",
+      "direction": "Uplink",
+      "template": "WHEN CAN YOU ACCEPT [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "UM149",
+      "direction": "Uplink",
+      "template": "CAN YOU ACCEPT [level] AT [position]",
+      "args": [
+        "Level",
+        "Position"
+      ],
+      "response_attr": "AN",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Affirm",
+          "label": "AFFIRM",
+          "uplink_id": "UM4",
+          "downlink_id": "DM4"
+        },
+        {
+          "intent": "Negative",
+          "label": "NEGATIVE",
+          "uplink_id": "UM5",
+          "downlink_id": "DM5"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM153",
+      "direction": "Uplink",
+      "template": "ALTIMETER [altimeter]",
+      "args": [
+        "Altimeter"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM158",
+      "direction": "Uplink",
+      "template": "ATIS [atis code]",
+      "args": [
+        "AtisCode"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM168",
+      "direction": "Uplink",
+      "template": "DISREGARD",
+      "args": [],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM169",
+      "direction": "Uplink",
+      "template": "[free text]",
+      "args": [
+        "FreeText"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM183",
+      "direction": "Uplink",
+      "template": "[free text]",
+      "args": [
+        "FreeText"
+      ],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM222",
+      "direction": "Uplink",
+      "template": "NO SPEED RESTRICTION",
+      "args": [],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "UM176",
+      "direction": "Uplink",
+      "template": "MAINTAIN OWN SEPARATION AND VMC",
+      "args": [],
+      "response_attr": "WU",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Wilco",
+          "label": "WILCO",
+          "uplink_id": "UM3",
+          "downlink_id": "DM0"
+        },
+        {
+          "intent": "Unable",
+          "label": "UNABLE",
+          "uplink_id": "UM0",
+          "downlink_id": "DM1"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    },
+    {
+      "id": "DM0",
+      "direction": "Downlink",
+      "template": "WILCO",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM1",
+      "direction": "Downlink",
+      "template": "UNABLE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM2",
+      "direction": "Downlink",
+      "template": "STANDBY",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": true,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM3",
+      "direction": "Downlink",
+      "template": "ROGER",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM4",
+      "direction": "Downlink",
+      "template": "AFFIRM",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM5",
+      "direction": "Downlink",
+      "template": "NEGATIVE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": true,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM62",
+      "direction": "Downlink",
+      "template": "ERROR [error information]",
+      "args": [
+        "ErrorInfo"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM63",
+      "direction": "Downlink",
+      "template": "NOT CURRENT DATA AUTHORITY",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM100",
+      "direction": "Downlink",
+      "template": "LOGICAL ACKNOWLEDGEMENT",
+      "args": [],
+      "response_attr": "N",
+      "fans": false,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM6",
+      "direction": "Downlink",
+      "template": "REQUEST [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM19",
+        "UM20",
+        "UM23",
+        "UM26",
+        "UM27",
+        "UM28",
+        "UM29",
+        "UM46",
+        "UM47",
+        "UM48"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM7",
+      "direction": "Downlink",
+      "template": "REQUEST BLOCK [level] TO [level]",
+      "args": [
+        "Level",
+        "Level"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM30",
+        "UM31",
+        "UM32"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM9",
+      "direction": "Downlink",
+      "template": "REQUEST CLIMB TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM19",
+        "UM20",
+        "UM23",
+        "UM26",
+        "UM27",
+        "UM28",
+        "UM29",
+        "UM46",
+        "UM47",
+        "UM48"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM10",
+      "direction": "Downlink",
+      "template": "REQUEST DESCENT TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM19",
+        "UM20",
+        "UM23",
+        "UM26",
+        "UM27",
+        "UM28",
+        "UM29",
+        "UM46",
+        "UM47",
+        "UM48"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM18",
+      "direction": "Downlink",
+      "template": "REQUEST [speed]",
+      "args": [
+        "Speed"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM106",
+        "UM107",
+        "UM108",
+        "UM109",
+        "UM116",
+        "UM222"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM22",
+      "direction": "Downlink",
+      "template": "REQUEST DIRECT TO [position]",
+      "args": [
+        "Position"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM74",
+        "UM96",
+        "UM190"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM25",
+      "direction": "Downlink",
+      "template": "REQUEST CLEARANCE",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM27",
+      "direction": "Downlink",
+      "template": "REQUEST WEATHER DEVIATION UP TO [distance] [direction] OF ROUTE",
+      "args": [
+        "Distance",
+        "Direction"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [
+        "UM0",
+        "UM82",
+        "UM64",
+        "UM74",
+        "UM96",
+        "UM190"
+      ],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM70",
+      "direction": "Downlink",
+      "template": "REQUEST HEADING [degrees]",
+      "args": [
+        "Degrees"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM15",
+      "direction": "Downlink",
+      "template": "REQUEST OFFSET [distance] [direction] OF ROUTE",
+      "args": [
+        "Distance",
+        "Direction"
+      ],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM20",
+      "direction": "Downlink",
+      "template": "REQUEST VOICE CONTACT",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM28",
+      "direction": "Downlink",
+      "template": "LEAVING [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM29",
+      "direction": "Downlink",
+      "template": "CLIMBING TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM30",
+      "direction": "Downlink",
+      "template": "DESCENDING TO [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM31",
+      "direction": "Downlink",
+      "template": "PASSING [position]",
+      "args": [
+        "Position"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM32",
+      "direction": "Downlink",
+      "template": "PRESENT LEVEL [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM33",
+      "direction": "Downlink",
+      "template": "PRESENT POSITION [position]",
+      "args": [
+        "Position"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM34",
+      "direction": "Downlink",
+      "template": "PRESENT SPEED [speed]",
+      "args": [
+        "Speed"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM37",
+      "direction": "Downlink",
+      "template": "MAINTAINING [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM38",
+      "direction": "Downlink",
+      "template": "ASSIGNED LEVEL [level]",
+      "args": [
+        "Level"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM41",
+      "direction": "Downlink",
+      "template": "BACK ON ROUTE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM48",
+      "direction": "Downlink",
+      "template": "POSITION REPORT [position report]",
+      "args": [
+        "PositionReport"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": false,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM65",
+      "direction": "Downlink",
+      "template": "DUE TO WEATHER",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM66",
+      "direction": "Downlink",
+      "template": "DUE TO AIRCRAFT PERFORMANCE",
+      "args": [],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM89",
+      "direction": "Downlink",
+      "template": "MONITORING [unit name] [frequency]",
+      "args": [
+        "UnitName",
+        "Frequency"
+      ],
+      "response_attr": "N",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM55",
+      "direction": "Downlink",
+      "template": "PAN PAN PAN",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM56",
+      "direction": "Downlink",
+      "template": "MAYDAY MAYDAY MAYDAY",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM58",
+      "direction": "Downlink",
+      "template": "CANCEL EMERGENCY",
+      "args": [],
+      "response_attr": "Y",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": []
+    },
+    {
+      "id": "DM67",
+      "direction": "Downlink",
+      "template": "[free text]",
+      "args": [
+        "FreeText"
+      ],
+      "response_attr": "R",
+      "fans": true,
+      "atn_b1": true,
+      "is_standby": false,
+      "is_closing_response": false,
+      "constrained_closing_replies": [],
+      "short_response_intents": [
+        {
+          "intent": "Roger",
+          "label": "ROGER",
+          "uplink_id": "UM3",
+          "downlink_id": "DM3"
+        },
+        {
+          "intent": "Standby",
+          "label": "STANDBY",
+          "uplink_id": "UM1",
+          "downlink_id": "DM2"
+        }
+      ]
+    }
+  ]
+}

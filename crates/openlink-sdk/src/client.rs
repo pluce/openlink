@@ -26,7 +26,8 @@
 use async_nats::ConnectOptions;
 use nkeys::KeyPair;
 use openlink_models::{
-    MessageBuilder, NetworkAddress, NetworkId, OpenLinkEnvelope, OpenLinkMessage,
+    AcarsEndpointAddress, MessageBuilder, MessageElement, NetworkAddress, NetworkId,
+    OpenLinkEnvelope, OpenLinkMessage,
 };
 
 use crate::credentials::OpenLinkCredentials;
@@ -235,6 +236,159 @@ impl OpenLinkClient {
 
         let subject = NatsSubjects::outbox(&self.network, &self.address);
         self.publish_envelope(&subject, &envelope).await
+    }
+
+    // ------------------------------------------------------------------
+    // High-level CPDLC helpers
+    // ------------------------------------------------------------------
+
+    /// Build an aircraft → station CPDLC logon request.
+    pub fn cpdlc_logon_request(
+        &self,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        target_station: &str,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(aircraft_callsign)
+            .to(target_station)
+            .logon_request(target_station, "ZZZZ", "ZZZZ")
+            .build()
+    }
+
+    /// Build an ATC → aircraft CPDLC logon response.
+    pub fn cpdlc_logon_response(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        accepted: bool,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(aircraft_callsign)
+            .logon_response(accepted)
+            .build()
+    }
+
+    /// Build an ATC → aircraft CPDLC connection request.
+    pub fn cpdlc_connection_request(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(aircraft_callsign)
+            .connection_request()
+            .build()
+    }
+
+    /// Build an aircraft → ATC CPDLC connection response.
+    pub fn cpdlc_connection_response(
+        &self,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        atc_callsign: &str,
+        accepted: bool,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(aircraft_callsign)
+            .to(atc_callsign)
+            .connection_response(accepted)
+            .build()
+    }
+
+    /// Build an ATC → aircraft Next Data Authority CPDLC message.
+    pub fn cpdlc_next_data_authority(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        nda_callsign: &str,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(aircraft_callsign)
+            .next_data_authority(nda_callsign, "")
+            .build()
+    }
+
+    /// Build an ATC → aircraft CPDLC contact request.
+    pub fn cpdlc_contact_request(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        next_station: &str,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(aircraft_callsign)
+            .contact_request(next_station)
+            .build()
+    }
+
+    /// Build an ATC → aircraft CPDLC end-service message.
+    pub fn cpdlc_end_service(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(aircraft_callsign)
+            .end_service()
+            .build()
+    }
+
+    /// Build an ATC → ATC CPDLC logon-forward message.
+    pub fn cpdlc_logon_forward(
+        &self,
+        atc_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        new_station: &str,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(atc_callsign)
+            .to(new_station)
+            .logon_forward(aircraft_callsign, "ZZZZ", "ZZZZ", new_station)
+            .build()
+    }
+
+    /// Build a station-originated CPDLC application message.
+    pub fn cpdlc_station_application(
+        &self,
+        station_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        elements: Vec<MessageElement>,
+        mrn: Option<u8>,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(station_callsign)
+            .to(aircraft_callsign)
+            .application_message_with_mrn(elements, mrn)
+            .build()
+    }
+
+    /// Build an aircraft-originated CPDLC application message.
+    pub fn cpdlc_aircraft_application(
+        &self,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        station_callsign: &str,
+        elements: Vec<MessageElement>,
+        mrn: Option<u8>,
+    ) -> OpenLinkMessage {
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(aircraft_callsign)
+            .to(station_callsign)
+            .application_message_with_mrn(elements, mrn)
+            .build()
     }
 
     /// Publish an envelope directly to a station's **inbox**.

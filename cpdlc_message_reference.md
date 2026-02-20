@@ -269,3 +269,113 @@ Chaque message impose une règle stricte quant à la réponse que le système au
 | DM 81-86 | WE CAN / CANNOT ACCEPT... | Réponses aux négociations ATC | N | Oui | Non |
 
 Note technique : Les messages identifiés comme "Non" dans l'une des colonnes FANS ou ATN B1 déclencheront automatiquement une erreur de type `MESSAGE NOT SUPPORTED` (UM 162) s'ils sont envoyés sur le mauvais réseau.
+
+
+
+
+
+
+Voici un document récapitulatif basé sur le manuel **GOLD (Global Operational Data Link Document)**. Il détaille les messages descendants (**Downlinks**) ayant un attribut de réponse "**Y**" et les messages montants (**Uplinks**) spécifiques qui peuvent y répondre pour clore le dialogue.
+
+---
+
+# Récapitulatif des Dialogues CPDLC (Réponse de type "Y")
+
+En CPDLC, l'attribut de réponse **"Y"** signifie qu'une réponse opérationnelle est requise pour clore le message. Pour un message descendant (DM) envoyé par le pilote, cela signifie que le contrôleur doit répondre avec un message montant (UM) spécifique pour que la transaction soit considérée comme terminée.
+
+### 1. Requêtes de Niveau (Vertical Requests)
+
+Ces messages concernent les demandes de changement d'altitude ou de niveau de vol.
+
+| Message Pilote (Downlink) | Réponses possibles du Contrôleur (Uplink) |
+| --- | --- |
+| <br>**DM 6** : REQUEST [level] 
+
+ | <br>**Clôture directe :** UM 0 (UNABLE), UM 19 (MAINTAIN), UM 20 (CLIMB TO), UM 23 (DESCEND TO), UM 26/27 (CLIMB TO REACH BY), UM 28/29 (DESCEND TO REACH BY), UM 46 (CROSS AT), UM 47 (CROSS AT OR ABOVE), UM 48 (CROSS AT OR BELOW).
+
+ |
+| <br>**DM 9** : REQUEST CLIMB TO [level] 
+
+ | Identiques à DM 6.
+
+ |
+| <br>**DM 10** : REQUEST DESCENT TO [level] 
+
+ | Identiques à DM 6.
+
+ |
+| <br>**DM 7** : REQUEST BLOCK [level] TO [level] 
+
+ | Messages de clairance de bloc ou de niveau.
+
+ |
+
+**Note importante :** L'envoi de **UM 1 (STANDBY)** ou **UM 2 (REQUEST DEFERRED)** par le contrôleur indique que la demande est reçue mais ne clôture pas techniquement le dialogue.
+
+### 2. Requêtes de Route et de Cap (Lateral Requests)
+
+Messages utilisés pour modifier la trajectoire latérale de l'avion.
+
+| Message Pilote (Downlink) | Réponses possibles du Contrôleur (Uplink) |
+| --- | --- |
+| <br>**DM 22** : REQUEST DIRECT TO [position] 
+
+ | <br>**Clôture :** UM 0 (UNABLE), UM 74 (PROCEED DIRECT TO), UM 96 (CONTINUE PRESENT HEADING), UM 190 (FLY HEADING).
+
+ |
+| <br>**DM 27** : REQUEST WEATHER DEVIATION UP TO [distance] [direction] 
+
+ | <br>**Clôture :** UM 0 (UNABLE), UM 82 (CLEARED TO DEVIATE), UM 64 (OFFSET), UM 74 (DIRECT TO), UM 96 (PRESENT HEADING), UM 190 (FLY HEADING).
+
+ |
+
+### 3. Requêtes de Vitesse (Speed Requests)
+
+| Message Pilote (Downlink) | Réponses possibles du Contrôleur (Uplink) |
+| --- | --- |
+| <br>**DM 18** : REQUEST [speed] 
+
+ | <br>**Clôture :** UM 0 (UNABLE), UM 106 (MAINTAIN SPEED), UM 107 (PRESENT SPEED), UM 108 (SPEED OR GREATER), UM 109 (SPEED OR LESS), UM 116 (RESUME NORMAL SPEED), UM 222 (NO SPEED RESTRICTION).
+
+ |
+
+### 4. Demandes d'Information (Negotiation Requests)
+
+Ces messages sont utilisés pour connaître les capacités futures ou les attentes de clairance.
+
+| Message Pilote (Downlink) | Réponses possibles du Contrôleur (Uplink) |
+| --- | --- |
+| <br>**DM 52** : WHEN CAN WE EXPECT LOWER [level] 
+
+ | <br>**Clôture :** UM 9 (EXPECT DESCENT AT [time]) ou UM 10 (EXPECT DESCENT AT [position]).
+
+ |
+| <br>**DM 53** : WHEN CAN WE EXPECT HIGHER [level] 
+
+ | <br>**Clôture :** UM 7 (EXPECT CLIMB AT [time]) ou UM 8 (EXPECT CLIMB AT [position]).
+
+ |
+| <br>**DM 49** : WHEN CAN WE EXPECT [speed] 
+
+ | <br>**Clôture :** UM 100 (AT [time] EXPECT [speed]) ou UM 101 (AT [position] EXPECT [speed]).
+
+ |
+
+---
+
+### Points de vigilance pour le système (Gestion technique)
+
+* 
+**Réponse de clôture** : Un dialogue est "ouvert" tant qu'un message de la série n'a pas reçu sa réponse de clôture opérationnelle (comme WILCO ou UNABLE).
+
+
+* 
+**Messages rejetés** : Si le contrôleur envoie une réponse de clôture (ex: une clairance) après qu'un délai technique (timer) a expiré, le système avionique peut rejeter le message avec une erreur.
+
+
+* 
+**Messages système additionnels** : Pour les systèmes **ATN B1**, les messages comme **UM 162 (SERVICE UNAVAILABLE)** ou **UM 237 (REQUEST AGAIN WITH NEXT UNIT)** sont également utilisés pour clore les requêtes pilotes qu'une unité ne peut pas traiter.
+
+
+
+Souhaitez-vous des précisions sur les temps de réponse (timers) associés à ces messages "Y" ?

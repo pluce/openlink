@@ -6,12 +6,12 @@ mod i18n;
 
 use dioxus::prelude::*;
 use uuid::Uuid;
-use state::{AppState, NatsClients, StationType, AtcLinkedFlight, SetupFields};
+use state::{AppState, NatsClients, StationType, SetupFields};
 use components::tab_bar::TabBar;
 use components::station_setup::StationSetup;
 use components::dcdu_view::DcduView;
 use components::atc_view::AtcView;
-use openlink_models::{AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcEnvelope, CpdlcMetaMessage, OpenLinkMessage, AcarsMessage, SerializedMessagePayload};
+use openlink_models::{AcarsEndpointAddress, CpdlcEnvelope, CpdlcMetaMessage, OpenLinkMessage, AcarsMessage, SerializedMessagePayload};
 
 fn main() {
     dioxus::launch(App);
@@ -61,6 +61,7 @@ fn App() -> Element {
     });
 
     rsx! {
+        document::Title { "Openlink Demonstrator GUI" }
         style { {include_str!("style.css")} }
         div { class: "app-root",
             TabBar {
@@ -217,7 +218,7 @@ async fn spawn_inbox_listener(
                     (
                         Some(app.min),
                         app.mrn,
-                        Some(format!("{:?}", app.effective_response_attr())),
+                        Some(app.effective_response_attr()),
                     )
                 })
                 .unwrap_or((None, None, None));
@@ -267,7 +268,7 @@ async fn handle_incoming_meta(
             };
             if is_aircraft {
                 let addr: AcarsEndpointAddress = setup.acars_address.clone().into();
-                let msg = nats_client::build_connection_response(
+                let msg = client.cpdlc_connection_response(
                     &setup.callsign,
                     &addr,
                     &cpdlc.source.to_string(),
@@ -279,23 +280,7 @@ async fn handle_incoming_meta(
         // Aircraft: receive logon response — nothing to do locally,
         // the SessionUpdate will set the authoritative state.
         CpdlcMetaMessage::LogonResponse { .. } => {}
-        // ATC: receive logon request from aircraft — add to linked flights
-        CpdlcMetaMessage::LogonRequest { .. } => {
-            let aircraft_callsign = cpdlc.source.to_string();
-            let mut state = app_state.write();
-            if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                if tab.setup.station_type == StationType::Atc {
-                    if !tab.linked_flights.iter().any(|f| f.callsign == aircraft_callsign) {
-                        tab.linked_flights.push(AtcLinkedFlight {
-                            callsign: aircraft_callsign.clone(),
-                            aircraft_callsign: aircraft_callsign.clone(),
-                            aircraft_address: aircraft_address.clone(),
-                            phase: CpdlcConnectionPhase::LogonPending,
-                        });
-                    }
-                }
-            }
-        }
+        CpdlcMetaMessage::LogonRequest { .. } => {}
         // ATC: receive connection response — nothing to do locally,
         // the SessionUpdate will set the authoritative state.
         CpdlcMetaMessage::ConnectionResponse { .. } => {}
@@ -309,7 +294,7 @@ async fn handle_incoming_meta(
             };
             if is_aircraft {
                 let addr: AcarsEndpointAddress = setup.acars_address.clone().into();
-                let msg = nats_client::build_logon_request(
+                let msg = client.cpdlc_logon_request(
                     &setup.callsign,
                     &addr,
                     &station.to_string(),
@@ -327,26 +312,13 @@ async fn handle_incoming_meta(
                     .unwrap_or(false)
             };
             if is_atc {
-                let msg = nats_client::build_connection_request(
+                let msg = client.cpdlc_connection_request(
                     &setup.callsign,
                     &flight.to_string(),
                     aircraft_address,
                 );
                 let _ = client.send_to_server(msg).await;
                 push_outgoing_message(app_state, tab_id, &format!("CONNECTION REQUEST → {flight}"));
-                // Also add to linked flights
-                let flight_cs = flight.to_string();
-                let mut state = app_state.write();
-                if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                    if !tab.linked_flights.iter().any(|f| f.callsign == flight_cs) {
-                        tab.linked_flights.push(AtcLinkedFlight {
-                            callsign: flight_cs.clone(),
-                            aircraft_callsign: flight_cs.clone(),
-                            aircraft_address: aircraft_address.clone(),
-                            phase: CpdlcConnectionPhase::LogonPending,
-                        });
-                    }
-                }
             }
         }
         // Server-authoritative session update — replace local session state
@@ -355,38 +327,24 @@ async fn handle_incoming_meta(
             if let Some(tab) = state.tab_mut_by_id(tab_id) {
                 tab.session = Some(session.clone());
 
-                // Clear optimistic logon_pending when session arrives
-                if tab.setup.station_type == StationType::Aircraft {
-                    tab.logon_pending = None;
-                }
-
-                // For ATC: update/add the linked flight entry
+                // For ATC: reconcile flights from server-authoritative session snapshots.
                 if tab.setup.station_type == StationType::Atc {
-                    // Collect callsigns still present in the session
-                    let active_peer = session.active_connection.as_ref().map(|c| c.peer.to_string());
-                    let inactive_peer = session.inactive_connection.as_ref().map(|c| c.peer.to_string());
+                    let key = session
+                        .aircraft
+                        .as_ref()
+                        .map(|c| c.to_string())
+                        .or_else(|| session.active_connection.as_ref().map(|c| c.peer.to_string()))
+                        .or_else(|| session.inactive_connection.as_ref().map(|c| c.peer.to_string()));
 
-                    // Update or add flights from active connection
-                    if let Some(ref conn) = session.active_connection {
-                        let aircraft_callsign = conn.peer.to_string();
-                        if let Some(flight) = tab.linked_flights.iter_mut().find(|f| f.callsign == aircraft_callsign) {
-                            flight.phase = conn.phase;
-                        }
-                    }
-                    // Update flights from inactive connection
-                    if let Some(ref conn) = session.inactive_connection {
-                        let aircraft_callsign = conn.peer.to_string();
-                        if let Some(flight) = tab.linked_flights.iter_mut().find(|f| f.callsign == aircraft_callsign) {
-                            flight.phase = conn.phase;
+                    if let Some(key) = key {
+                        if session.active_connection.is_none() && session.inactive_connection.is_none() {
+                            tab.atc_sessions.remove(&key);
+                        } else {
+                            tab.atc_sessions.insert(key, session.clone());
                         }
                     }
 
-                    // Remove flights whose callsign is no longer in either connection
-                    tab.linked_flights.retain(|f| {
-                        active_peer.as_ref().is_some_and(|p| *p == f.callsign)
-                            || inactive_peer.as_ref().is_some_and(|p| *p == f.callsign)
-                    });
-                    if tab.selected_flight_idx.map_or(false, |idx| idx >= tab.linked_flights.len()) {
+                    if tab.selected_flight_idx.map_or(false, |idx| idx >= tab.atc_sessions.len()) {
                         tab.selected_flight_idx = None;
                     }
                 }

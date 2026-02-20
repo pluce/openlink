@@ -234,6 +234,109 @@ pub enum ResponseAttribute {
     NE = 5,
 }
 
+/// Semantic pilot/controller short response used by UIs.
+///
+/// This abstracts protocol-specific UM/DM IDs so clients can work with
+/// intent-level actions only.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CpdlcResponseIntent {
+    Wilco,
+    Unable,
+    Standby,
+    Roger,
+    Affirm,
+    Negative,
+}
+
+impl CpdlcResponseIntent {
+    /// Protocol downlink (DM*) element ID for this intent.
+    pub fn downlink_id(self) -> &'static str {
+        match self {
+            CpdlcResponseIntent::Wilco => "DM0",
+            CpdlcResponseIntent::Unable => "DM1",
+            CpdlcResponseIntent::Standby => "DM2",
+            CpdlcResponseIntent::Roger => "DM3",
+            CpdlcResponseIntent::Affirm => "DM4",
+            CpdlcResponseIntent::Negative => "DM5",
+        }
+    }
+
+    /// Protocol uplink (UM*) element ID for this intent.
+    pub fn uplink_id(self) -> &'static str {
+        match self {
+            CpdlcResponseIntent::Wilco => "UM3",     // ATC acknowledges a W/U request with ROGER
+            CpdlcResponseIntent::Unable => "UM0",
+            CpdlcResponseIntent::Standby => "UM1",
+            CpdlcResponseIntent::Roger => "UM3",
+            CpdlcResponseIntent::Affirm => "UM4",
+            CpdlcResponseIntent::Negative => "UM5",
+        }
+    }
+
+    /// Human-readable label for UI buttons.
+    pub fn label(self) -> &'static str {
+        match self {
+            CpdlcResponseIntent::Wilco => "WILCO",
+            CpdlcResponseIntent::Unable => "UNABLE",
+            CpdlcResponseIntent::Standby => "STANDBY",
+            CpdlcResponseIntent::Roger => "ROGER",
+            CpdlcResponseIntent::Affirm => "AFFIRM",
+            CpdlcResponseIntent::Negative => "NEGATIVE",
+        }
+    }
+
+    /// Available semantic responses for a given message response attribute.
+    pub fn for_attribute(attr: ResponseAttribute) -> Vec<Self> {
+        match attr {
+            ResponseAttribute::WU => vec![
+                CpdlcResponseIntent::Wilco,
+                CpdlcResponseIntent::Unable,
+                CpdlcResponseIntent::Standby,
+            ],
+            ResponseAttribute::AN => vec![
+                CpdlcResponseIntent::Affirm,
+                CpdlcResponseIntent::Negative,
+                CpdlcResponseIntent::Standby,
+            ],
+            ResponseAttribute::R => vec![
+                CpdlcResponseIntent::Roger,
+                CpdlcResponseIntent::Standby,
+            ],
+            // "Y" requires a data reply, not a fixed short intent.
+            ResponseAttribute::Y | ResponseAttribute::N | ResponseAttribute::NE => vec![],
+        }
+    }
+}
+
+/// For some request messages (notably response-attribute `Y`), GOLD/ICAO
+/// define a constrained set of valid closing replies.
+///
+/// Returns a list of message IDs (same direction as the response) that are
+/// especially relevant to close the dialogue.
+pub fn constrained_closing_reply_ids(request_message_id: &str) -> &'static [&'static str] {
+    match request_message_id {
+        // Vertical requests
+        "DM6" | "DM9" | "DM10" => &[
+            "UM0", "UM19", "UM20", "UM23", "UM26", "UM27", "UM28", "UM29", "UM46", "UM47", "UM48",
+        ],
+        "DM7" => &["UM0", "UM30", "UM31", "UM32"],
+
+        // Lateral requests
+        "DM22" => &["UM0", "UM74", "UM96", "UM190"],
+        "DM27" => &["UM0", "UM82", "UM64", "UM74", "UM96", "UM190"],
+
+        // Speed request
+        "DM18" => &["UM0", "UM106", "UM107", "UM108", "UM109", "UM116", "UM222"],
+
+        // "When can we expect..." negotiation
+        "DM49" => &["UM100", "UM101"],
+        "DM52" => &["UM9", "UM10"],
+        "DM53" => &["UM7", "UM8"],
+
+        _ => &[],
+    }
+}
+
 impl fmt::Display for ResponseAttribute {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -694,6 +797,24 @@ impl CpdlcApplicationMessage {
     }
 }
 
+/// Return `true` if a composed response should close the referenced dialogue.
+///
+/// Rule used by the UI: a composition closes the dialogue when it contains at
+/// least one closing short response (WILCO/UNABLE/ROGER/AFFIRM/NEGATIVE) and
+/// does not contain STANDBY.
+pub fn closes_dialogue_response_elements(elements: &[MessageElement]) -> bool {
+    let has_standby = elements
+        .iter()
+        .any(|e| matches!(e.id.as_str(), "DM2" | "UM1" | "UM2"));
+    let has_closing_response = elements.iter().any(|e| {
+        matches!(
+            e.id.as_str(),
+            "DM0" | "DM1" | "DM3" | "DM4" | "DM5" | "UM0" | "UM3" | "UM4" | "UM5"
+        )
+    });
+    has_closing_response && !has_standby
+}
+
 impl From<CpdlcApplicationMessage> for SerializedMessagePayload {
     fn from(value: CpdlcApplicationMessage) -> Self {
         SerializedMessagePayload(value.render())
@@ -776,6 +897,13 @@ pub struct CpdlcConnectionView {
 /// without duplicating the state machine logic.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CpdlcSessionView {
+    /// Aircraft callsign owning this CPDLC session.
+    ///
+    /// Present on station views to allow ATC clients to reconcile
+    /// session updates per aircraft without local inference.
+    pub aircraft: Option<AcarsEndpointCallsign>,
+    /// Aircraft ACARS endpoint address owning this CPDLC session.
+    pub aircraft_address: Option<crate::acars::AcarsEndpointAddress>,
     /// The active connection (CDA side for the aircraft).
     pub active_connection: Option<CpdlcConnectionView>,
     /// The inactive connection (NDA side for the aircraft).

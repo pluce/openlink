@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use openlink_models::{AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcSessionView, OpenLinkEnvelope};
+use openlink_models::{AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcSessionView, MessageElement, OpenLinkEnvelope, ResponseAttribute};
 use openlink_sdk::OpenLinkClient;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -50,8 +50,8 @@ pub struct ReceivedMessage {
     pub min: Option<u8>,
     /// Message Reference Number — the MIN of the message this replies to.
     pub mrn: Option<u8>,
-    /// Effective response attribute for this message (e.g. "W/U", "Y").
-    pub response_attr: Option<String>,
+    /// Effective response attribute for this message.
+    pub response_attr: Option<ResponseAttribute>,
     /// Whether a closing response (WILCO/UNABLE/etc.) has been sent to this message.
     pub responded: bool,
 }
@@ -76,24 +76,38 @@ pub struct TabState {
     // Server-authoritative CPDLC session state
     pub session: Option<CpdlcSessionView>,
 
-    // DCDU state — logon_pending is set optimistically before SessionUpdate arrives
-    pub logon_pending: Option<String>,
+    // DCDU state
     pub logon_input: String,
 
-    // ATC state
-    pub linked_flights: Vec<AtcLinkedFlight>,
+    // ATC state (server-authoritative snapshots keyed by aircraft callsign)
+    pub atc_sessions: HashMap<String, CpdlcSessionView>,
     pub selected_flight_idx: Option<usize>,
     pub contact_input: String,
     pub conn_mgmt_open: bool,
+    /// Which connection management action is being parameterized (e.g. "CONTACT")
+    pub pending_conn_mgmt_cmd: Option<String>,
     pub atc_uplink_open: bool,
 
     // Pilot state
     pub pilot_downlink_open: bool,
-    pub fl_input: String,
+    /// Generic argument inputs for currently parameterized command.
+    pub cmd_arg_inputs: Vec<String>,
+    /// Search query used in command menus (uplink/downlink).
+    pub cmd_search_query: String,
+    /// Enable multi-element compose workflow.
+    pub compose_mode: bool,
+    /// Elements queued for the next composed application message.
+    pub compose_elements: Vec<MessageElement>,
+    /// Optional MRN used when composing a response with additional elements.
+    pub compose_mrn: Option<u8>,
+    /// In compose context, submitting the current parameter form sends all.
+    pub compose_send_after_param: bool,
     /// Which downlink command is being parameterized (e.g. "DM6") — None = show menu
     pub pending_downlink_cmd: Option<String>,
     /// Which uplink command is being parameterized (e.g. "UM20") — None = show menu
     pub pending_uplink_cmd: Option<String>,
+    /// Optional restriction set for uplink menu (suggested replies context).
+    pub suggested_uplink_ids: Vec<String>,
 
     // Common
     pub messages: Vec<ReceivedMessage>,
@@ -152,17 +166,23 @@ impl TabState {
             phase: TabPhase::Setup,
             setup: SetupFields::default(),
             session: None,
-            logon_pending: None,
             logon_input: String::new(),
-            linked_flights: Vec::new(),
+            atc_sessions: HashMap::new(),
             selected_flight_idx: None,
             contact_input: String::new(),
             conn_mgmt_open: false,
+            pending_conn_mgmt_cmd: None,
             atc_uplink_open: false,
             pilot_downlink_open: false,
-            fl_input: String::new(),
+            cmd_arg_inputs: Vec::new(),
+            cmd_search_query: String::new(),
+            compose_mode: false,
+            compose_elements: Vec::new(),
+            compose_mrn: None,
+            compose_send_after_param: false,
             pending_downlink_cmd: None,
             pending_uplink_cmd: None,
+            suggested_uplink_ids: Vec::new(),
             messages: Vec::new(),
             nats_task_active: false,
         }

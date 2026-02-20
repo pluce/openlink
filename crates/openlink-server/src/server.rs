@@ -2,9 +2,10 @@
 
 use anyhow::Result;
 use futures::StreamExt;
+use std::collections::HashSet;
 use openlink_models::{
-    AcarsEnvelope, MetaMessage, NetworkId, OpenLinkEnvelope, OpenLinkMessage,
-    OpenLinkRouting,
+    AcarsEndpointCallsign, AcarsEnvelope, MetaMessage, NetworkAddress, NetworkId,
+    OpenLinkEnvelope, OpenLinkMessage, OpenLinkRouting, StationStatus,
 };
 use openlink_sdk::{MessageBuilder, NatsSubjects, OpenLinkClient};
 use tracing::{debug, error, info, warn};
@@ -149,6 +150,19 @@ impl OpenLinkServer {
                     {
                         error!(error = %e, "failed to update station status");
                     }
+
+                    if *status == StationStatus::Online {
+                        if let Err(e) = self
+                            .sync_session_snapshots_for_callsign(
+                                address,
+                                &acars_endpoint.callsign,
+                                root.id.to_string(),
+                            )
+                            .await
+                        {
+                            warn!(error = %e, callsign = %acars_endpoint.callsign, "failed to sync session snapshots on station online");
+                        }
+                    }
                 }
             }
         }
@@ -225,24 +239,37 @@ impl OpenLinkServer {
             debug!(callsign = %aircraft.callsign, "aircraft not found in registry, skipping SessionUpdate");
         }
 
-        // Send a SessionUpdate to each connected ground station
-        let mut station_endpoints: Vec<openlink_models::AcarsRoutingEndpoint> = Vec::new();
+        // Send a SessionUpdate to relevant ground stations.
+        // Include both currently-connected stations and stations that took part
+        // in the triggering exchange (e.g. END SERVICE initiator), so ATC can
+        // clear UI state even when connection slots are now empty.
+        let mut station_callsigns: HashSet<String> = HashSet::new();
         if let Some(ref conn) = session.active_connection {
-            station_endpoints.push(conn.station.clone());
+            station_callsigns.insert(conn.station.callsign.to_string());
         }
         if let Some(ref conn) = session.inactive_connection {
-            station_endpoints.push(conn.station.clone());
+            station_callsigns.insert(conn.station.callsign.to_string());
+        }
+        if let OpenLinkMessage::Acars(acars_env) = &original_envelope.payload {
+            let openlink_models::AcarsMessage::CPDLC(cpdlc) = &acars_env.message;
+            if cpdlc.source != aircraft.callsign {
+                station_callsigns.insert(cpdlc.source.to_string());
+            }
+            if cpdlc.destination != aircraft.callsign {
+                station_callsigns.insert(cpdlc.destination.to_string());
+            }
         }
 
-        for station_endpoint in station_endpoints {
-            let station_view = session.to_station_view(&station_endpoint.callsign);
+        for station_callsign in station_callsigns {
+            let station_callsign = AcarsEndpointCallsign::new(&station_callsign);
+            let station_view = session.to_station_view(&station_callsign);
 
             let station_msg = MessageBuilder::cpdlc(
                 aircraft.callsign.to_string(),
                 aircraft.address.to_string(),
             )
                 .from("SERVER")
-                .to(station_endpoint.callsign.to_string())
+                .to(station_callsign.to_string())
                 .session_update(station_view)
                 .build();
 
@@ -254,7 +281,7 @@ impl OpenLinkServer {
 
             if let Ok(Some(station_entry)) = self
                 .station_registry
-                .lookup_callsign(&station_endpoint.callsign)
+                .lookup_callsign(&station_callsign)
                 .await
             {
                 if let Err(e) = self
@@ -262,11 +289,51 @@ impl OpenLinkServer {
                     .send_to_station(&station_entry.network_address, &station_envelope)
                     .await
                 {
-                    error!(error = %e, station = %station_endpoint.callsign, "failed to send SessionUpdate to station");
+                    error!(error = %e, station = %station_callsign, "failed to send SessionUpdate to station");
                 } else {
-                    debug!(station = %station_endpoint.callsign, "sent SessionUpdate to station");
+                    debug!(station = %station_callsign, "sent SessionUpdate to station");
                 }
             }
         }
+    }
+
+    /// Replay all current session snapshots relevant to a participant callsign.
+    async fn sync_session_snapshots_for_callsign(
+        &self,
+        network_address: &NetworkAddress,
+        callsign: &AcarsEndpointCallsign,
+        correlation_id: String,
+    ) -> Result<()> {
+        let sessions = self
+            .cpdlc_server
+            .list_sessions_for_callsign(callsign)
+            .await?;
+
+        for session in sessions {
+            let view = if session.aircraft.callsign == *callsign {
+                session.to_aircraft_view()
+            } else {
+                session.to_station_view(callsign)
+            };
+
+            let msg = MessageBuilder::cpdlc(
+                session.aircraft.callsign.to_string(),
+                session.aircraft.address.to_string(),
+            )
+            .from("SERVER")
+            .to(callsign.to_string())
+            .session_update(view)
+            .build();
+
+            let envelope = MessageBuilder::envelope(msg)
+                .source_server(self.network_id.as_str())
+                .destination_address(self.network_id.as_str(), network_address.as_str())
+                .correlation_id(correlation_id.clone())
+                .build();
+
+            self.client.send_to_station(network_address, &envelope).await?;
+        }
+
+        Ok(())
     }
 }
