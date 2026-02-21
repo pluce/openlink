@@ -6,30 +6,92 @@ template: splash
 
 import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## OpenLink at a glance
+## What OpenLink is
 
-OpenLink is a Rust-based reference implementation for ACARS/CPDLC messaging over NATS.
-This site combines a product overview and synchronized technical documentation.
+OpenLink is an open-source datalink project in active development.
 
-### What you get
+The original goal is to provide a modern alternative to legacy virtual-network datalink
+setups while staying practical for aircraft and ATC client developers.
+
+Today, the first CPDLC server implementation is already usable for development and demos,
+but the project is **not production-ready yet**.
+
+## Who it is for
+
+### Virtual ATC teams
+
+OpenLink targets controller-side workflows that need consistent behavior across
+sectors and handoffs:
+
+- reliable online/offline presence,
+- explicit active/inactive data authority,
+- shared session truth across handoffs,
+- predictable CPDLC dialogue closure rules.
+
+### Virtual airline ops / dispatch ecosystems
+
+OpenLink also targets airline-ops and EFB/FMS integration work:
+
+- standardized message envelopes and routing,
+- easy-to-implement API layer for avionics software,
+- clear, structured protocol specs for integrators,
+- scalability from small servers to large station counts.
+
+## Current vision
+
+OpenLink is designed to be:
+
+- **network-agnostic** (and potentially multi-network in the future),
+- **protocol-extensible** (CPDLC first, then other ACARS apps like DCL/AOC/D-ATIS),
+- **secure by design** (OIDC/JWT aligned with the parent network identity),
+- **event-driven and scalable** through queue-based message processing.
+
+## Why this approach is different
+
+Compared with "just implement CPDLC payloads" approaches, OpenLink focuses on
+an operational stack:
 
 <CardGrid stagger>
-	<Card title="Server authoritative state" icon="check">
-		CPDLC session lifecycle and routing logic are managed centrally by the server.
+	<Card title="Beyond one protocol" icon="open-book">
+		CPDLC is the first implementation, but the architecture is meant to carry other
+		ACARS applications and potentially non-ACARS protocols too.
 	</Card>
-	<Card title="SDK + raw transport docs" icon="open-book">
-		Integrate using the Rust SDK or directly with raw NATS subjects and envelopes.
+	<Card title="Event-driven core" icon="seti:terminal">
+		Messages go through a queue and are processed by server workers, which helps absorb
+		load peaks and scale more cleanly.
 	</Card>
-	<Card title="Operational tooling" icon="seti:terminal">
-		Includes CLI, GUI, and a load-testing harness for throughput/latency validation.
+	<Card title="Network-native security" icon="shield-check">
+		Identity is tied to the underlying network authentication flow (OIDC/JWT), enabling
+		clean network isolation and stronger station identity guarantees.
+	</Card>
+	<Card title="Thin client integrations" icon="code">
+		A lot of CPDLC/session logic is handled server-side, so aircraft and ATC clients can
+		integrate faster with less protocol complexity.
+	</Card>
+	<Card title="Close to IRL protocol semantics" icon="check">
+		The wire format is implementation-friendly, while protocol behavior remains aligned
+		with real CPDLC logic. A gateway to character-based formats is possible later.
 	</Card>
 </CardGrid>
 
-### Start here
+## Project status
+
+Current state:
+
+- first working CPDLC server,
+- prototype GUI (aircraft DCDU + ATSU style),
+- CLI and load-test tooling,
+- ongoing integration work for real client ecosystems.
+
+This is a community-driven open-source project: stable enough to explore,
+integrate, and contribute — still evolving before production-grade maturity.
+
+## Start here
 
 <CardGrid>
 	<LinkCard title="OpenLink Overview" href="generated/overview/" />
-	<LinkCard title="SDK Guide" href="generated/docs/sdk/" />
-	<LinkCard title="Load Testing" href="generated/crates/openlink-loadtest/" />
+	<LinkCard title="Architecture & Concepts" href="generated/docs/sdk/concepts/" />
+	<LinkCard title="SDK Integrator Guide" href="generated/docs/sdk/" />
 	<LinkCard title="CPDLC Message Catalog" href="generated/docs/sdk/reference/cpdlc-messages/" />
+	<LinkCard title="Load Testing & Validation" href="generated/crates/openlink-loadtest/" />
 </CardGrid>
