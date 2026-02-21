@@ -22,7 +22,7 @@ export default defineConfig({
 				replacesTitle: true,
 			},
 			customCss: ['./src/styles/custom.css'],
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com' }],
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/pluce/openlink' }],
 			sidebar: [
 				{
 					label: 'OpenLink',
