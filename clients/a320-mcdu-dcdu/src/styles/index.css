@@ -1,0 +1,857 @@
+/**
+ * A320 Cockpit-inspired styling for MCDU and DCDU.
+ *
+ * Color Coding (per real A320):
+ *   Green (#00ff7f)  — Active/validated data, titles
+ *   Cyan (#00e0ff)   — Editable/selectable fields, prompts
+ *   White (#e0e0e0)  — Labels, static text
+ *   Amber (#ff9800)  — Warnings, cautions, emergency
+ *
+ * Uses B612 Mono — a font specifically designed for aircraft cockpit displays.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=B612+Mono:wght@400;700&display=swap');
+
+/* ================================================================== */
+/* Global Reset & Base                                                */
+/* ================================================================== */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --green: #00ff7f;
+  --cyan: #00e0ff;
+  --white: #e0e0e0;
+  --amber: #ff9800;
+  --dim-green: #004422;
+  --dim-white: #555;
+  --bezel-mcdu: #1e1e20;
+  --bezel-dcdu: #5a5c62;
+  --screen-bg: #050a08;
+  --font: "B612 Mono", "Fira Code", "Consolas", monospace;
+}
+
+html, body {
+  height: 100%;
+  background: #1a1a1e;
+  color: var(--white);
+  font-family: var(--font);
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ================================================================== */
+/* Home Screen                                                        */
+/* ================================================================== */
+
+.home-screen {
+  max-width: 520px;
+  width: 100%;
+  padding: 40px 30px;
+  background: var(--bezel-mcdu);
+  border: 2px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.home-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.home-header h1 {
+  font-size: 20px;
+  color: var(--green);
+  letter-spacing: 3px;
+  font-weight: 400;
+}
+
+.home-subtitle {
+  font-size: 11px;
+  color: var(--dim-white);
+  margin-top: 8px;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section h2 {
+  font-size: 11px;
+  color: var(--cyan);
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.form-row label {
+  width: 130px;
+  font-size: 11px;
+  color: var(--white);
+  flex-shrink: 0;
+}
+
+.form-row input {
+  flex: 1;
+  background: #050805;
+  border: 1px solid #333;
+  color: var(--green);
+  font-family: var(--font);
+  font-size: 15px;
+  padding: 7px 10px;
+  outline: none;
+  border-radius: 2px;
+}
+
+.form-row input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 4px rgba(0,224,255,0.15);
+}
+
+.form-row input:disabled {
+  color: var(--dim-white);
+}
+
+.form-error {
+  background: #2a1500;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  padding: 8px 12px;
+  font-size: 11px;
+  margin-bottom: 16px;
+  border-radius: 3px;
+}
+
+.error-icon {
+  margin-right: 6px;
+}
+
+.connect-btn {
+  width: 100%;
+  padding: 12px;
+  background: #0a2a12;
+  border: 2px solid var(--green);
+  color: var(--green);
+  font-family: var(--font);
+  font-size: 16px;
+  cursor: pointer;
+  letter-spacing: 3px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.connect-btn:hover:not(:disabled) {
+  background: #0e3a18;
+}
+
+.connect-btn:disabled {
+  border-color: var(--dim-white);
+  color: var(--dim-white);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.home-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--dim-white);
+}
+
+.home-footer code {
+  color: var(--cyan);
+}
+
+/* ================================================================== */
+/* Cockpit View — DCDU on top, StatusBar in middle, MCDU on bottom    */
+/* ================================================================== */
+
+.cockpit-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-height: 100vh;
+  gap: 6px;
+}
+
+/* ================================================================== */
+/* DCDU — Datalink Control and Display Unit                           */
+/* Gray metallic bezel, pill-shaped buttons, corner screws            */
+/* ================================================================== */
+
+.dcdu {
+  border-radius: 14px;
+  padding: 10px;
+  position: relative;
+  border: 2px solid #7a7c82;
+  background: linear-gradient(145deg, #6e7076 0%, #5e6066 40%, #505258 70%, #5a5c62 100%);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/* Corner screws (decorative) */
+.dcdu-corner {
+  position: absolute;
+  color: #999;
+  font-size: 14px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+.dcdu-corner.tl { top: 6px; left: 8px; }
+.dcdu-corner.tr { top: 6px; right: 8px; }
+.dcdu-corner.bl { bottom: 6px; left: 8px; }
+.dcdu-corner.br { bottom: 6px; right: 8px; }
+
+.dcdu-screen {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+/* ── DCDU Side Buttons (pill-shaped, like real unit) ── */
+
+.dcdu-buttons-left,
+.dcdu-buttons-right {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 54px;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+.dcdu-btn {
+  background: linear-gradient(180deg, #6e7076 0%, #52545a 100%);
+  border: 1.5px solid #8a8c92;
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 10px 2px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.2;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.dcdu-btn:hover {
+  background: linear-gradient(180deg, #7e8086 0%, #62646a 100%);
+}
+
+.dcdu-btn:active {
+  background: linear-gradient(180deg, #4a4c52 0%, #3a3c42 100%);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.dcdu-btn-spacer {
+  flex: 1;
+  min-height: 4px;
+}
+
+/* Blank/inactive bottom buttons — just a subtle horizontal dash */
+.dcdu-btn.blank {
+  background: linear-gradient(180deg, #55575d 0%, #45474d 100%);
+  border-color: #6a6c72;
+  color: transparent;
+  cursor: default;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  min-width: 44px;
+}
+
+/* Physical side button mapped to a CPDLC response action */
+.dcdu-btn.action {
+  cursor: pointer;
+  background: linear-gradient(180deg, #5a5c62 0%, #4a4c52 100%);
+}
+.dcdu-btn.action:hover {
+  background: linear-gradient(180deg, #6e7076 0%, #5e6066 100%);
+}
+/* Green highlight when pressed — stays active until server ack */
+.dcdu-btn.action.active {
+  background: var(--green) !important;
+  color: #080808;
+  box-shadow: 0 0 8px rgba(0,255,127,0.4);
+}
+.dcdu-btn.action:disabled:not(.active) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Display-only response labels on screen edges (not clickable) */
+.dcdu-resp-label {
+  color: var(--cyan);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+/* Highlighted when that response is being sent */
+.dcdu-resp-label.active {
+  background: var(--cyan);
+  color: #080808;
+  padding: 1px 4px;
+}
+
+/* Close label — bottom-right of lower zone */
+.dcdu-close-label {
+  color: var(--cyan);
+  font-weight: 700;
+  cursor: default;
+}
+
+/* ── DCDU Main Display ── */
+
+.dcdu-display {
+  background: var(--screen-bg);
+  border: 3px solid #1a1a1a;
+  border-radius: 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 18px;
+  width: 26ch;
+  box-shadow: inset 0 0 20px rgba(0,50,20,0.12);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* === UPPER ZONE: message content (display only) === */
+.dcdu-upper {
+  flex: 2;
+  padding: 0.4em 1ch;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* === IDLE STATE (no messages) === */
+.dcdu-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 10px;
+}
+.dcdu-status-line {
+  color: var(--green);
+  font-size: 1em;
+  letter-spacing: 2px;
+}
+.dcdu-status-sub {
+  color: var(--dim-white);
+  font-size: 0.75em;
+  letter-spacing: 1px;
+}
+
+/* === MESSAGE HEADER: "1410Z FROM KUSA   OPEN" === */
+.dcdu-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5ch;
+  margin-bottom: 0.2em;
+  font-size: 0.75em;
+  line-height: 1.4;
+}
+.dcdu-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5ch;
+}
+.dcdu-timestamp { color: var(--green); }
+.dcdu-direction { color: var(--green); }
+.dcdu-station   { color: var(--green); }
+
+/* Status badge: top-right — always inverted (green bg, dark text) */
+.dcdu-status-badge {
+  font-size: calc(1em / 0.75);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: var(--green);
+  color: #080808;
+  padding: 0 0.5ch;
+}
+.dcdu-status-badge.open {
+  background: transparent;
+  color: var(--cyan);
+  border: none;
+  padding: 0;
+}
+
+.dcdu-status-badge.responding {
+  animation: pulse 0.8s infinite;
+}
+
+/* === MESSAGE BODY === */
+.dcdu-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.dcdu-message-text {
+  font-size: 1em;
+  font-weight: 700;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+  padding: 0;
+}
+.dcdu-text-static    { color: var(--green); }
+.dcdu-text-param     { color: var(--cyan); }
+
+/* === DIALOGUE: dashed separator + inverted response block === */
+.dcdu-dialogue-sep {
+  color: var(--green);
+  opacity: 0.5;
+  line-height: 1.5;
+  font-size: 1em;
+  font-weight: 700;
+  white-space: pre;
+}
+.dcdu-response-block {
+  background: var(--green);
+  color: #080808;
+  font-size: 1em;
+  font-weight: 700;
+  padding: 0 1ch;
+  line-height: 1.5;
+  letter-spacing: 0.5px;
+}
+.dcdu-response-block .dcdu-text-static,
+.dcdu-response-block .dcdu-text-param {
+  color: #080808;
+}
+.dcdu-response-block.draft {
+  background: var(--cyan);
+  color: #080808;
+}
+.dcdu-response-block.draft .dcdu-text-static,
+.dcdu-response-block.draft .dcdu-text-param {
+  color: #080808;
+}
+.dcdu-response-block.sending {
+  animation: pulse 0.8s infinite;
+}
+
+/* === HORIZONTAL SEPARATOR === */
+.dcdu-separator {
+  height: 1px;
+  background: var(--white);
+  margin: 0;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* === LOWER ZONE: ≈25-30% height, 2 rows === */
+.dcdu-lower-zone {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0;
+}
+.dcdu-lower-row {
+  display: grid;
+  grid-template-columns: 7ch 12ch 7ch;
+  align-items: center;
+  flex: 1;
+}
+
+/* Cells in the lower grid (left / right / center) */
+.dcdu-lower-cell {
+  font-family: var(--font);
+  font-size: 0.75em;
+  font-weight: 700;
+  color: var(--cyan);
+  background: none;
+  border: none;
+  padding: 0 1ch;
+  letter-spacing: 0.5px;
+}
+.dcdu-lower-cell.left  { text-align: left;  }
+.dcdu-lower-cell.right { text-align: right; }
+
+/* Center column: white left/right borders */
+.dcdu-lower-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-left: 1px solid rgba(224, 224, 224, 0.5);
+  border-right: 1px solid rgba(224, 224, 224, 0.5);
+  padding: 0 1ch;
+}
+/* Second row: pagination aligned right */
+.dcdu-lower-row:last-child .dcdu-lower-center {
+  justify-content: flex-end;
+}
+.dcdu-lower-status {
+  color: var(--white);
+  font-size: 0.75em;
+  letter-spacing: 0.5px;
+  text-align: center;
+  font-family: var(--font);
+}
+
+/* Old vbar separators — replaced by borders */
+.dcdu-vbar {
+  display: none;
+}
+
+/* Response button inside lower zone */
+.dcdu-resp-btn {
+  cursor: pointer;
+  font-family: var(--font);
+}
+.dcdu-resp-btn:hover:not(:disabled) {
+  color: var(--cyan);
+}
+/* Active = pressed & awaiting server ack → green inverted */
+.dcdu-resp-btn.active {
+  background: var(--green);
+  color: #080808;
+  padding: 2px 6px;
+}
+.dcdu-resp-btn:disabled:not(.active) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* CLOSE button */
+.dcdu-close-btn {
+  cursor: pointer;
+  font-family: var(--font);
+}
+.dcdu-close-btn:hover {
+  color: var(--cyan);
+}
+
+/* Pagination: PG 1 2 3 */
+.dcdu-pagination {
+  color: var(--white);
+  font-size: 0.75em;
+  letter-spacing: 1px;
+  font-family: var(--font);
+}
+.pg-active   { color: var(--white); font-weight: 700; }
+.pg-inactive { color: var(--dim-white); }
+
+.dcdu-pg-label { color: var(--dim-white); font-size: 12px; }
+.dcdu-pg-num { color: var(--dim-white); font-size: 12px; }
+.dcdu-pg-num.active { color: var(--white); }
+
+/* ================================================================== */
+/* Page layout                                                        */
+/* ================================================================== */
+
+.app-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* ================================================================== */
+/* Status Bar — discreet page header                                  */
+/* ================================================================== */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #2a2a2a;
+  border-radius: 0;
+  font-size: 10px;
+  min-height: 20px;
+  width: 100%;
+  opacity: 0.7;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.green {
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+}
+
+.status-dot.amber {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+  animation: pulse 1s infinite;
+}
+
+.status-dot.red {
+  background: #ff3333;
+  box-shadow: 0 0 4px #ff3333;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.status-label { color: var(--dim-white); }
+
+.status-center {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.status-callsign { color: var(--green); font-weight: 700; }
+.status-cid { color: var(--dim-white); }
+.status-atc { color: var(--cyan); }
+.phase-connected { color: var(--green); }
+.phase-loggedon, .phase-logonpending { color: var(--cyan); }
+
+.disconnect-btn {
+  background: transparent;
+  border: 1px solid #555;
+  color: var(--amber);
+  font-family: var(--font);
+  font-size: 10px;
+  padding: 3px 10px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.disconnect-btn:hover {
+  background: #331100;
+  border-color: var(--amber);
+}
+
+/* ================================================================== */
+/* MCDU — Multifunction Control and Display Unit                      */
+/* 24-char × 14-line monospace grid, physical LSK buttons outside     */
+/* ================================================================== */
+
+.mcdu {
+  background: var(--bezel-mcdu);
+  border-radius: 14px;
+  padding: 10px;
+  border: 2px solid #333;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* ── Annunciator Bar (FM1, IND, RDY, FM2) ── */
+
+.mcdu-annunciators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 3px 44px;
+  margin-bottom: 5px;
+}
+
+.ann {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 3px;
+  color: #2a2a2a;
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  text-align: center;
+  min-width: 42px;
+  letter-spacing: 0.5px;
+}
+
+.ann.on {
+  color: var(--amber);
+  border-color: #553300;
+  background: #1a1000;
+  text-shadow: 0 0 6px rgba(255,152,0,0.4);
+}
+
+.ann.rdy.on {
+  color: var(--green);
+  border-color: #005522;
+  background: #001a0a;
+  text-shadow: 0 0 6px rgba(0,255,127,0.4);
+}
+
+.ann.spacer {
+  flex: 1;
+  border: none;
+  background: transparent;
+}
+
+/* ── MCDU Bezel — wraps LSK columns + screen ── */
+
+.mcdu-bezel {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+/* ── LSK Columns (physical buttons — stubby horizontal bars) ── */
+
+.mcdu-lsk-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* top: title (1.3em) + screen top padding (0.4em) */
+  padding-top: calc(1.3em + 0.4em);
+  /* bottom: scratchpad area (margin 0.15em + 1.3em line + screen bottom padding 0.4em) */
+  padding-bottom: calc(0.15em + 1.3em + 0.4em);
+  gap: 0;
+  font-size: 18px;
+}
+
+.mcdu-lsk-col .lsk {
+  /* Each LSK fills one row-group (flex distributes evenly) */
+  flex: 1;
+  width: 18px;
+  background: transparent;
+  border: none;
+  color: #444;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: transform 0.08s;
+  position: relative;
+}
+
+/* Stubby dash mark inside LSK */
+.mcdu-lsk-col .lsk::after {
+  content: '';
+  display: block;
+  width: 14px;
+  height: 3px;
+  background: #444;
+  border-radius: 1px;
+}
+
+.mcdu-lsk-col .lsk:not(:disabled)::after { background: #777; }
+.mcdu-lsk-col .lsk:not(:disabled):hover::after {
+  background: var(--white);
+  box-shadow: 0 0 4px rgba(255,255,255,0.3);
+}
+.mcdu-lsk-col .lsk:not(:disabled):hover { transform: scale(1.3); }
+.mcdu-lsk-col .lsk:not(:disabled):active { transform: scale(0.85); }
+.mcdu-lsk-col .lsk:disabled { cursor: default; }
+
+/* ── MCDU Screen — 14-line fixed grid ── */
+
+.mcdu-screen {
+  background: #000;
+  border: 3px solid #111;
+  border-radius: 4px;
+  padding: 0.4em 1ch;
+  width: 26ch;
+  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset 0 0 30px rgba(0,30,15,0.08);
+  text-transform: uppercase;
+}
+
+/* Title row — Line 1 (large font) */
+.mcdu-row.title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1.3;
+  height: 1.3em;
+}
+
+.mcdu-row.title .mcdu-cell.left  { text-align: center; flex: 1; }
+.mcdu-row.title .mcdu-cell.right { text-align: right; position: absolute; right: 1ch; }
+
+/* Row group = label line + data line (Lines 2–13) */
+.mcdu-row-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Label row — even lines (small font 0.75×) */
+.mcdu-row.label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75em;
+  line-height: 1.2;
+  height: calc(0.75em * 1.2);
+}
+
+/* Data row — odd lines (large font) */
+.mcdu-row.data {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1em;
+  line-height: 1.2;
+  height: 1.2em;
+}
+
+/* Cell — left or right aligned within a row */
+.mcdu-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 50%;
+}
+.mcdu-cell.left  { text-align: left; }
+.mcdu-cell.right { text-align: right; margin-left: auto; }
+
+/* Scratchpad row — Line 14 (large font) */
+.mcdu-row.scratchpad {
+  margin-top: 0.15em;
+  font-size: 1em;
+  line-height: 1.3;
+  height: 1.3em;
+}
+
+.scratchpad-cursor {
+  color: var(--cyan);
+  animation: blink 0.8s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── Color Classes (A320 standard) ── */
+
+.color-white { color: var(--white); }
+.color-green { color: var(--green); }
+.color-cyan  { color: var(--cyan); }
+.color-amber { color: var(--amber); }
+.color-red   { color: #ff2222; }

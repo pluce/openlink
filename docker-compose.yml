@@ -7,6 +7,8 @@ services:
       - "4222:4222" # Client default
       - "8222:8222" # Management HTTP
       - "6222:6222" # Clustering
-    command: "-js -m 8222" # Enable JetStream and Monitoring
+      - "9222:9222" 
+    command: "-js -m 8222 -c /conf/ws.conf -DV" # Enable JetStream and Monitoring
     volumes:
-      - ./data/nats:/var/lib/nats-data
+      - .nats/data:/var/lib/nats-data
+      - .nats/config:/conf

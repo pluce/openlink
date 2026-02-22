@@ -2,6 +2,9 @@
 target/
 **/*.rs.bk
 
+# Nats
+.nats/data/
+
 # OS
 .DS_Store
 Thumbs.db
