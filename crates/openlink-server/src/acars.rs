@@ -1,8 +1,9 @@
 //! CPDLC session state machine and server-side message handler.
 //!
 //! Manages per-aircraft CPDLC sessions stored in a JetStream KV bucket,
-//! processing meta-messages (logon, connection, NDA, termination) and
-//! resolving ACARS callsigns to network station entries.
+//! processing protocol meta-messages (logon/connection/session update) plus
+//! session-management UM messages, and resolving ACARS callsigns to network
+//! station entries.
 
 use std::sync::{Arc, Mutex};
 
@@ -10,9 +11,9 @@ use anyhow::Result;
 use futures::TryStreamExt;
 use openlink_models::{
     AcarsEndpointCallsign, AcarsEnvelope, AcarsMessage, AcarsRoutingEndpoint,
-    CpdlcApplicationMessage, CpdlcArgument, CpdlcConnectionPhase, CpdlcConnectionView, CpdlcDialogue,
-    CpdlcEnvelope, CpdlcMessageType, CpdlcMetaMessage, CpdlcSessionView, DialogueState,
-    NetworkId, OpenLinkEnvelope, OpenLinkMessage, ResponseAttribute, find_definition,
+    CpdlcApplicationMessage, CpdlcArgument, CpdlcConnectionPhase, CpdlcConnectionView,
+    CpdlcEnvelope, CpdlcMessageType, CpdlcMetaMessage, CpdlcSessionView,
+    NetworkId, OpenLinkEnvelope, OpenLinkMessage, find_definition,
 };
 use tracing::{debug, info, warn};
 
@@ -26,15 +27,12 @@ pub struct CPDLCSession {
     pub active_connection: Option<CPDLCConnection>,
     pub inactive_connection: Option<CPDLCConnection>,
     pub next_data_authority: Option<AcarsRoutingEndpoint>,
-    /// Next MIN to assign for aircraft-originated (downlink) messages (0–63 cyclic).
+    /// Next MIN to assign for aircraft-originated (downlink) messages (1–63 cyclic).
     #[serde(default)]
     pub min_counter_aircraft: u8,
-    /// Next MIN to assign for station-originated (uplink) messages (0–63 cyclic).
+    /// Next MIN to assign for station-originated (uplink) messages (1–63 cyclic).
     #[serde(default)]
     pub min_counter_station: u8,
-    /// Active CPDLC dialogues awaiting a closing response.
-    #[serde(default)]
-    pub dialogues: Vec<CpdlcDialogue>,
 }
 
 /// A single CPDLC connection to a ground station within a session.
@@ -72,6 +70,20 @@ impl From<&AcarsRoutingEndpoint> for CPDLCSessionId {
     }
 }
 
+/// Allocate the next CPDLC MIN from a per-direction counter.
+///
+/// MIN values are emitted in the range 1..=63 and wrap back to 1.
+/// If persisted state contains 0 (legacy), it is normalized to 1.
+fn next_min(counter: &mut u8) -> u8 {
+    let current = if *counter == 0 || *counter > 63 {
+        1
+    } else {
+        *counter
+    };
+    *counter = if current >= 63 { 1 } else { current + 1 };
+    current
+}
+
 #[allow(dead_code)] // state machine methods exercised in tests, wired from production code as protocol grows
 impl CPDLCConnection {
     pub fn new(station: AcarsRoutingEndpoint) -> Self {
@@ -81,6 +93,7 @@ impl CPDLCConnection {
             connection: false,
         }
     }
+
 
     /// Mark the connection as logged on.
     pub fn logon(&mut self) {
@@ -117,9 +130,8 @@ impl CPDLCSession {
             active_connection: None,
             inactive_connection: None,
             next_data_authority: None,
-            min_counter_aircraft: 0,
-            min_counter_station: 0,
-            dialogues: Vec::new(),
+            min_counter_aircraft: 1,
+            min_counter_station: 1,
         }
     }
 
@@ -378,10 +390,9 @@ impl CPDLCServer {
     /// Process a CPDLC application message (uplinks / downlinks).
     ///
     /// 1. Validates that the active connection is in `Connected` state.
-    /// 2. Assigns a MIN (Message Identification Number, 0–63 cyclic).
-    /// 3. Validates the MRN (Message Reference Number) if this is a response.
-    /// 4. Creates / closes dialogues according to the message's response attribute.
-    /// 5. Returns the destination callsign for forwarding.
+    /// 2. Assigns a MIN (Message Identification Number, 1–63 cyclic) when missing (`min=0`).
+    /// 3. Applies server-side session mutations for selected UM session-management elements.
+    /// 4. Returns the destination callsign for forwarding.
     pub async fn handle_cpdlc_application_message(
         &self,
         msg: CpdlcApplicationMessage,
@@ -443,83 +454,37 @@ impl CPDLCServer {
                         ));
                     }
 
-                    // Assign MIN.
-                    let min = if is_downlink {
-                        let m = session.min_counter_aircraft;
-                        session.min_counter_aircraft = (m + 1) % 64;
-                        m
-                    } else {
-                        let m = session.min_counter_station;
-                        session.min_counter_station = (m + 1) % 64;
-                        m
-                    };
-                    msg.min = min;
-
-                    // Compute the effective response attribute (multi-element precedence).
-                    let effective_attr = msg.effective_response_attr();
-
-                    // Validate MRN if present — must reference an open dialogue.
-                    if let Some(mrn) = msg.mrn {
-                        // Check that the referenced dialogue exists and is open.
-                        let dialogue_exists = session
-                            .dialogues
-                            .iter()
-                            .any(|d| d.initiator_min == mrn && d.state == DialogueState::Open);
-                        if !dialogue_exists {
-                            warn!(mrn, "MRN does not reference an open dialogue — forwarding anyway");
-                        }
-
-                        // Determine if this response closes the dialogue.
-                        // STANDBY (DM2, UM1, UM2) does NOT close the dialogue.
-                        let is_standby = msg.elements.iter().any(|e| {
-                            matches!(e.id.as_str(), "DM2" | "UM1" | "UM2")
-                        });
-
-                        if !is_standby {
-                            // Close the referenced dialogue.
-                            if let Some(d) = session
-                                .dialogues
-                                .iter_mut()
-                                .find(|d| d.initiator_min == mrn && d.state == DialogueState::Open)
-                            {
-                                d.state = DialogueState::Closed;
-                                debug!(mrn, "dialogue closed by response");
-                            }
+                    // Assign MIN only when missing; this allows progressively
+                    // moving MIN ownership to clients while keeping compatibility.
+                    if msg.min == 0 {
+                        msg.min = if is_downlink {
+                            next_min(&mut session.min_counter_aircraft)
                         } else {
-                            debug!(mrn, "STANDBY — dialogue remains open");
-                        }
+                            next_min(&mut session.min_counter_station)
+                        };
                     }
 
-                    // Open a new dialogue if this message expects a response.
-                    match effective_attr {
-                        ResponseAttribute::N | ResponseAttribute::NE => {
-                            // No response expected — no dialogue to track.
-                        }
-                        attr => {
-                            session.dialogues.push(CpdlcDialogue {
-                                initiator_min: min,
-                                initiator: source.clone(),
-                                state: DialogueState::Open,
-                                response_attr: attr,
-                            });
-                            debug!(min, ?attr, "dialogue opened");
-                        }
-                    }
-
-                    // Garbage-collect closed dialogues (keep only open ones + last 16 closed).
-                    let open_count = session.dialogues.iter().filter(|d| d.state == DialogueState::Open).count();
-                    if session.dialogues.len() > open_count + 16 {
-                        // Remove oldest closed dialogues.
-                        let mut closed_removed = 0;
-                        let target_removals = session.dialogues.len() - open_count - 16;
-                        session.dialogues.retain(|d| {
-                            if d.state == DialogueState::Closed && closed_removed < target_removals {
-                                closed_removed += 1;
-                                false
-                            } else {
-                                true
+                    // Session-management commands now carried as standard
+                    // application messages.
+                    for element in &msg.elements {
+                        match element.id.as_str() {
+                            // UM160 NEXT DATA AUTHORITY [facility designation]
+                            "UM160" => {
+                                if let Some(CpdlcArgument::FacilityDesignation(facility)) =
+                                    element.args.first()
+                                {
+                                    session.next_data_authority(AcarsRoutingEndpoint::new(
+                                        facility.as_str(),
+                                        "",
+                                    ))?;
+                                }
                             }
-                        });
+                            // UM161 END SERVICE
+                            "UM161" => {
+                                session.termination_request(&source)?;
+                            }
+                            _ => {}
+                        }
                     }
 
                     // Store the modified message for the outer scope.
@@ -642,47 +607,10 @@ impl CPDLCServer {
                 warn!("ignoring client-sent SessionUpdate");
                 None
             }
-            CpdlcMetaMessage::NextDataAuthority { nda } => {
-                info!(aircraft = ?aircraft, nda = ?nda, "processing next data authority");
-                self.get_and_update_session_for_aircraft(&aircraft, |maybe_session: Option<CPDLCSession>| {
-                    let aircraft = aircraft.clone();
-                    Box::pin(async move {
-                        let mut session =
-                            maybe_session.unwrap_or_else(|| CPDLCSession::new(aircraft));
-                        session.next_data_authority(nda)?;
-                        Ok(Some(session))
-                    })
-                })
-                .await?
-            }
-            CpdlcMetaMessage::ContactRequest { station } => {
-                info!(aircraft = ?aircraft, station = ?station, "processing contact request");
-                // ContactRequest is forwarded to the aircraft — no session change here.
-                // The aircraft will initiate a logon to the new station.
-                None
-            }
-            CpdlcMetaMessage::EndService => {
-                let source_callsign = cpdlc.source.clone();
-                info!(aircraft = ?aircraft, source = %source_callsign, "processing end service");
-                self.get_and_update_session_for_aircraft(&aircraft, |maybe_session: Option<CPDLCSession>| {
-                    let aircraft = aircraft.clone();
-                    Box::pin(async move {
-                        let mut session =
-                            maybe_session.unwrap_or_else(|| CPDLCSession::new(aircraft));
-                        session.termination_request(&source_callsign)?;
-                        Ok(Some(session))
-                    })
-                })
-                .await?
-            }
             CpdlcMetaMessage::LogonForward { flight, new_station, .. } => {
                 info!(aircraft = ?aircraft, flight = ?flight, new_station = ?new_station, "processing logon forward");
                 // LogonForward is a station-to-station message: route to the new station.
                 // The new station should then send a ConnectionRequest to the aircraft.
-                None
-            }
-            CpdlcMetaMessage::ContactResponse { .. } | CpdlcMetaMessage::ContactComplete => {
-                // Forward as-is to the destination.
                 None
             }
         };

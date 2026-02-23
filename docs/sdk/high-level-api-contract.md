@@ -4,6 +4,9 @@
 
 Define the expected surface of an SDK intended for production aircraft/ATC integrators.
 
+This contract is language-neutral and complements the dedicated
+[Polyglot SDK contract](polyglot-sdk-contract.md).
+
 ## Transport capabilities
 
 The SDK should expose:
@@ -75,7 +78,22 @@ Even with high-level APIs, integrators should be able to:
 - `send_cpdlc(message_id, args, context)`
 - `get_suggested_replies(context)`
 
+## Canonical CPDLC helper set (recommended)
+
+- `cpdlc_logon_request(...)`
+- `cpdlc_logon_response(...)`
+- `cpdlc_connection_request(...)`
+- `cpdlc_connection_response(...)`
+- `cpdlc_next_data_authority(...)`
+- `cpdlc_contact_request(...)`
+- `cpdlc_end_service(...)`
+- `cpdlc_logon_forward(...)`
+- `cpdlc_station_application(...)`
+- `cpdlc_aircraft_application(...)`
+- `cpdlc_logical_ack(...)`
+
 ## Related pages
 
 - [Conformance profile](conformance-profile.md)
+- [Polyglot SDK contract](polyglot-sdk-contract.md)
 - [Raw NATS integration quickstart](quickstart-raw-nats.md)

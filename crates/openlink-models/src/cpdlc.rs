@@ -23,7 +23,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::acars::{AcarsEndpointCallsign, AcarsRoutingEndpoint};
+use crate::acars::AcarsEndpointCallsign;
 use crate::error::ModelError;
 
 // ---------------------------------------------------------------------------
@@ -792,7 +792,7 @@ impl MessageElement {
 /// [`MESSAGE_REGISTRY`].
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct CpdlcApplicationMessage {
-    /// Message Identification Number (0–63), assigned by the sender.
+    /// Message Identification Number (1–63), assigned by the sender/server.
     pub min: u8,
     /// Message Reference Number — the MIN of the message being replied to.
     /// `None` for an initiating (new-dialogue) message.
@@ -1013,8 +1013,8 @@ impl From<CpdlcMessageType> for SerializedMessagePayload {
 
 /// Protocol-level CPDLC messages used for session management.
 ///
-/// These messages handle the logon / connection / contact / transfer lifecycle
-/// between an aircraft and successive ATC ground stations.
+/// These messages handle logon / connection / transfer control and
+/// server-authoritative session snapshots.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type", content = "data")]
 pub enum CpdlcMetaMessage {
@@ -1043,21 +1043,6 @@ pub enum CpdlcMetaMessage {
         accepted: bool,
     },
 
-    /// Ground station instructs the aircraft to contact another station.
-    ContactRequest {
-        /// The next station the aircraft should contact.
-        station: AcarsEndpointCallsign,
-    },
-
-    /// Aircraft responds to a contact request.
-    ContactResponse {
-        /// Whether the aircraft accepts the contact instruction.
-        accepted: bool,
-    },
-
-    /// Aircraft confirms that the contact handover is complete.
-    ContactComplete,
-
     /// Server-side forwarding of logon credentials to a new station.
     LogonForward {
         /// The callsign of the flight being forwarded.
@@ -1069,16 +1054,6 @@ pub enum CpdlcMetaMessage {
         /// The station that should receive the logon.
         new_station: AcarsEndpointCallsign,
     },
-
-    /// Notification of the Next Data Authority for a flight.
-    NextDataAuthority {
-        /// The new data authority endpoint.
-        nda: AcarsRoutingEndpoint,
-    },
-
-    /// Ground station ends service with the aircraft, terminating the
-    /// active connection and promoting the inactive one (if any).
-    EndService,
 
     /// Server → client notification: session state after processing a meta-message.
     ///
@@ -1112,13 +1087,6 @@ impl From<CpdlcMetaMessage> for SerializedMessagePayload {
                     if accepted { "ACCEPTED" } else { "REJECTED" }
                 )
             }
-            CpdlcMetaMessage::ContactRequest { station } => {
-                format!("CONTACT {}", station)
-            }
-            CpdlcMetaMessage::ContactResponse { accepted } => {
-                format!("CONTACT {}", if accepted { "ACCEPTED" } else { "REJECTED" })
-            }
-            CpdlcMetaMessage::ContactComplete => "CONTACT COMPLETE".to_string(),
             CpdlcMetaMessage::LogonForward {
                 flight,
                 flight_plan_origin,
@@ -1128,10 +1096,6 @@ impl From<CpdlcMetaMessage> for SerializedMessagePayload {
                 "LOGON FORWARD FLIGHT {} ORIGIN {} DEST {} NEW STATION {}",
                 flight, flight_plan_origin, flight_plan_destination, new_station
             ),
-            CpdlcMetaMessage::NextDataAuthority { nda } => {
-                format!("NEXT DATA AUTHORITY {} {}", nda.callsign, nda.address)
-            }
-            CpdlcMetaMessage::EndService => "END SERVICE".to_string(),
             CpdlcMetaMessage::SessionUpdate { ref session } => {
                 let active = session
                     .active_connection
@@ -1498,34 +1462,8 @@ mod tests {
     }
 
     #[test]
-    fn meta_contact_request_serialisation() {
-        let meta = CpdlcMetaMessage::ContactRequest {
-            station: "LFPG".into(),
-        };
-        let payload: SerializedMessagePayload = meta.into();
-        assert_eq!(payload.to_string(), "CONTACT LFPG");
-    }
-
-    #[test]
-    fn meta_contact_complete_serialisation() {
-        let meta = CpdlcMetaMessage::ContactComplete;
-        let payload: SerializedMessagePayload = meta.into();
-        assert_eq!(payload.to_string(), "CONTACT COMPLETE");
-    }
-
-    #[test]
-    fn meta_next_data_authority_serialisation() {
-        use crate::acars::AcarsRoutingEndpoint;
-        let meta = CpdlcMetaMessage::NextDataAuthority {
-            nda: AcarsRoutingEndpoint::new("LFPG", "ADDR001"),
-        };
-        let payload: SerializedMessagePayload = meta.into();
-        assert_eq!(payload.to_string(), "NEXT DATA AUTHORITY LFPG ADDR001");
-    }
-
     // -- CpdlcMessageType delegation ---------------------------------------
 
-    #[test]
     fn message_type_application_delegates() {
         let mt = CpdlcMessageType::Application(CpdlcApplicationMessage {
             min: 1,

@@ -13,6 +13,10 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
+    "baseUrl": ".",
+    "paths": {
+      "@openlink/sdk-ts": ["../openlink-sdk-ts/src/index.ts"]
+    },
     "noEmit": true,
     "jsx": "react-jsx",
 
@@ -24,5 +28,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "../openlink-sdk-ts/src"]
 }

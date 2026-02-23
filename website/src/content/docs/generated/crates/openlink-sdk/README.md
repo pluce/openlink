@@ -99,3 +99,12 @@ while let Some(raw) = inbox.next().await {
   authorised peer) push an envelope directly into another station's inbox.
 - **Subject authority** – `NatsSubjects` is the single place that defines every
   subject and KV bucket name used across the platform.
+
+## Conformance tests (runtime vectors)
+
+From repository root:
+
+- `cargo test -p openlink-sdk cpdlc_runtime`
+
+These tests dynamically load `spec/sdk-conformance/runtime-vectors.v1.json`
+and verify SDK runtime behavior against canonical vectors.

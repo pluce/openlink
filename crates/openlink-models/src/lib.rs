@@ -12,8 +12,7 @@
 //! │   └── AcarsMessage::CPDLC(CpdlcEnvelope)
 //! │       ├── CpdlcMessageType::Application(CpdlcMessage)
 //! │       └── CpdlcMessageType::Meta(CpdlcMetaMessage)
-//! │           ├── Logon / Connection / Contact / Transfer
-//! │           └── NextDataAuthority
+//! │           └── Logon / Connection / SessionUpdate / Transfer
 //! └── OpenLinkMessage::Meta(MetaMessage)
 //!     └── StationStatus
 //! ```

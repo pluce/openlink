@@ -1,0 +1,166 @@
+{
+  "version": "1.0.0",
+  "description": "Language-neutral runtime vectors for OpenLink SDK parity checks.",
+  "runtime": {
+    "logical_ack": [
+      {
+        "id": "ack-id-dm100",
+        "operation": "is_logical_ack_element_id",
+        "input": { "id": "DM100" },
+        "expected": true
+      },
+      {
+        "id": "ack-id-um227",
+        "operation": "is_logical_ack_element_id",
+        "input": { "id": "UM227" },
+        "expected": true
+      },
+      {
+        "id": "ack-id-regular",
+        "operation": "is_logical_ack_element_id",
+        "input": { "id": "DM0" },
+        "expected": false
+      },
+      {
+        "id": "contains-ack-true",
+        "operation": "message_contains_logical_ack",
+        "input": { "elements": [{ "id": "UM227", "args": [] }] },
+        "expected": true
+      },
+      {
+        "id": "contains-ack-false",
+        "operation": "message_contains_logical_ack",
+        "input": { "elements": [{ "id": "UM20", "args": [] }] },
+        "expected": false
+      },
+      {
+        "id": "auto-ack-enabled",
+        "operation": "should_auto_send_logical_ack",
+        "input": { "elements": [{ "id": "UM20", "args": [] }], "min": 12 },
+        "expected": true
+      },
+      {
+        "id": "auto-ack-disabled-min-zero",
+        "operation": "should_auto_send_logical_ack",
+        "input": { "elements": [{ "id": "UM20", "args": [] }], "min": 0 },
+        "expected": false
+      },
+      {
+        "id": "auto-ack-disabled-on-ack-message",
+        "operation": "should_auto_send_logical_ack",
+        "input": { "elements": [{ "id": "UM227", "args": [] }], "min": 27 },
+        "expected": false
+      }
+    ],
+    "response_attr": [
+      {
+        "id": "attr-wu",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "WU" },
+        "expected_downlink_ids": ["DM0", "DM1", "DM2"]
+      },
+      {
+        "id": "attr-an",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "AN" },
+        "expected_downlink_ids": ["DM4", "DM5", "DM2"]
+      },
+      {
+        "id": "attr-r",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "R" },
+        "expected_downlink_ids": ["DM3", "DM2"]
+      },
+      {
+        "id": "attr-y",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "Y" },
+        "expected_downlink_ids": []
+      },
+      {
+        "id": "attr-n",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "N" },
+        "expected_downlink_ids": []
+      },
+      {
+        "id": "attr-ne",
+        "operation": "response_attr_to_intents",
+        "input": { "attr": "NE" },
+        "expected_downlink_ids": []
+      }
+    ],
+    "short_response_selection": [
+      {
+        "id": "precedence-wu-over-an",
+        "operation": "choose_short_response_intents",
+        "input": {
+          "elements": [
+            { "id": "UMX1", "args": [] },
+            { "id": "UMX2", "args": [] }
+          ],
+          "catalog_entries": {
+            "UMX1": { "id": "UMX1", "response_attr": "AN", "short_response_intents": [] },
+            "UMX2": { "id": "UMX2", "response_attr": "WU", "short_response_intents": [] }
+          }
+        },
+        "expected_downlink_ids": ["DM0", "DM1", "DM2"]
+      },
+      {
+        "id": "precedence-r-over-y",
+        "operation": "choose_short_response_intents",
+        "input": {
+          "elements": [
+            { "id": "UMX3", "args": [] },
+            { "id": "UMX4", "args": [] }
+          ],
+          "catalog_entries": {
+            "UMX3": { "id": "UMX3", "response_attr": "R", "short_response_intents": [] },
+            "UMX4": { "id": "UMX4", "response_attr": "Y", "short_response_intents": [] }
+          }
+        },
+        "expected_downlink_ids": ["DM3", "DM2"]
+      },
+      {
+        "id": "fallback-default-wu-when-no-definitions",
+        "operation": "choose_short_response_intents",
+        "input": {
+          "elements": [{ "id": "UNKNOWN", "args": [] }],
+          "catalog_entries": {}
+        },
+        "expected_downlink_ids": ["DM0", "DM1", "DM2"]
+      }
+    ],
+    "dialogue_close": [
+      {
+        "id": "close-with-dm0",
+        "operation": "closes_dialogue_response_elements",
+        "input": { "elements": [{ "id": "DM0", "args": [] }] },
+        "expected": true
+      },
+      {
+        "id": "close-with-dm1",
+        "operation": "closes_dialogue_response_elements",
+        "input": { "elements": [{ "id": "DM1", "args": [] }] },
+        "expected": true
+      },
+      {
+        "id": "not-close-with-standby-only",
+        "operation": "closes_dialogue_response_elements",
+        "input": { "elements": [{ "id": "DM2", "args": [] }] },
+        "expected": false
+      },
+      {
+        "id": "standby-overrides-closing",
+        "operation": "closes_dialogue_response_elements",
+        "input": {
+          "elements": [
+            { "id": "DM0", "args": [] },
+            { "id": "DM2", "args": [] }
+          ]
+        },
+        "expected": false
+      }
+    ]
+  }
+}

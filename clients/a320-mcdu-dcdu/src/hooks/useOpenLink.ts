@@ -23,6 +23,7 @@ import {
   buildConnectionResponse,
   buildApplicationResponse,
   buildApplicationDownlink,
+  buildLogicalAck,
   buildEnvelope,
 } from "../lib/envelope";
 import {
@@ -31,6 +32,7 @@ import {
   textPartsToString,
   getResponseIntents,
 } from "../lib/catalog";
+import { shouldAutoSendLogicalAck } from "@openlink/sdk-ts";
 import type {
   ConnectionSettings,
   DcduMessage,
@@ -44,7 +46,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Load the CPDLC catalog at module init (bundled by Vite)
 import catalogData from "../data/catalog.v1.json";
-loadCatalog((catalogData as { messages: never[] }).messages);
+loadCatalog((catalogData as { messages: unknown[] }).messages as never[]);
 
 // ──────────────────────────────────────────────────────────────────────
 // Connection status
@@ -140,6 +142,47 @@ export function useOpenLink(): UseOpenLinkReturn {
       } else if (cpdlcMsg.type === "Application") {
         // Parse elements into rich TextParts using the CPDLC catalog
         const elements = cpdlcMsg.data.elements;
+
+        // Auto-send CPDLC logical acknowledgement based on shared SDK runtime rules.
+        if (shouldAutoSendLogicalAck(elements, cpdlcMsg.data.min)) {
+          const s = settingsRef.current;
+          if (s && clientRef.current) {
+            const ack = buildLogicalAck(
+              s.callsign,
+              s.acarsAddress,
+              cpdlc.source,
+              cpdlcMsg.data.min
+            );
+            const ackEnv = buildEnvelope(
+              s.networkId,
+              clientRef.current.networkAddress,
+              ack,
+              clientRef.current.jwt
+            );
+            clientRef.current.publish(ackEnv).catch((err) => {
+              console.warn("[A320] Logical ACK send failed:", err);
+            });
+          }
+        }
+
+        // UM117 CONTACT [unit name] [frequency] now drives auto-logon handoff.
+        const contactElement = elements.find((e) => e.id === "UM117");
+        if (contactElement) {
+          const stationArg = contactElement.args.find((a) => a.type === "UnitName");
+          const station = typeof stationArg?.value === "string" ? stationArg.value : null;
+          const s = settingsRef.current;
+          if (station && s && clientRef.current) {
+            const logon = buildLogonRequest(s.callsign, s.acarsAddress, station);
+            const env = buildEnvelope(
+              s.networkId,
+              clientRef.current.networkAddress,
+              logon,
+              clientRef.current.jwt
+            );
+            clientRef.current.publish(env);
+          }
+        }
+
         const textParts = elementsToTextParts(elements);
         const plainText = textPartsToString(textParts);
         const responseIntents = getResponseIntents(elements);
@@ -286,22 +329,6 @@ export function useOpenLink(): UseOpenLinkReturn {
             respondedWith: statusText,
           };
           setDcduMessages((prev) => [...prev, msg]);
-          break;
-        }
-
-        case "ContactRequest": {
-          // ATC is handing us off to another station → auto-logon
-          console.log("[A320] Contact request → new station:", meta.data.station);
-          const s = settingsRef.current;
-          if (s && clientRef.current) {
-            const logon = buildLogonRequest(
-              s.callsign,
-              s.acarsAddress,
-              meta.data.station
-            );
-            const env = buildEnvelope(s.networkId, clientRef.current.networkAddress, logon, clientRef.current.jwt);
-            clientRef.current.publish(env);
-          }
           break;
         }
 

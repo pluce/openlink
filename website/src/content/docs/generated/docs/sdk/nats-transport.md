@@ -2,7 +2,7 @@
 title: NATS Transport
 description: Mirrored documentation from docs/sdk/nats-transport.md
 sidebar:
-  order: 6
+  order: 5
 ---
 
 > Source: docs/sdk/nats-transport.md (synced automatically)

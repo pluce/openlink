@@ -9,7 +9,29 @@
  * - Send responses (WILCO, UNABLE, STANDBY, etc.)
  * - Browse message history (MSG+/MSG-)
  *
- * Layout:
+ * ## Dialog management (MIN/MRN linking)
+ *
+ * Each CPDLC message has a Message Identification Number (MIN) assigned
+ * by the server. A response references the original message via a Message
+ * Reference Number (MRN) equal to the original's MIN.
+ *
+ * Dialog chain example:
+ *   ATC → CLIMB TO FL360        (min=X)
+ *   Pilot → STANDBY             (mrn=X, short response — not a separate msg)
+ *   Pilot → [free text response] (mrn=X, server assigns min=Y)
+ *   ATC → ROGER                 (mrn=Y → resolved to X via chain)
+ *
+ * All linked messages in a chain are displayed inline under the root
+ * uplink, and hidden from the main MSG+/MSG- navigation list.
+ *
+ * ## Response attribute priority
+ *
+ * The CPDLC catalog defines response attributes per message element:
+ *   WU (WILCO/UNABLE) > AN (AFFIRM/NEGATIVE) > R (ROGER) > Y (specific) > N (none)
+ * When a message has multiple elements, the highest-priority attribute wins.
+ *
+ * ## Layout
+ *
  * ┌──────┬────────────────────────────────────────┬──────┐
  * │ BRT  │  1410Z FROM KUSA           OPEN        │PRINT │
  * │ DIM  │                                        │      │
@@ -22,19 +44,26 @@
  * └──────┴────────────────────────────────────────┴──────┘
  *
  * The screen is split into two zones:
- * - UPPER: message content (header + message text) — display only
+ * - UPPER: message content (header + message text) — display only.
+ *   Supports PGE-/PGE+ scrolling for long dialog chains.
  * - LOWER: fixed 2-line height — response actions on left/right,
  *          transient status (SENT/SENDING) and pagination in center.
  *
- * Response buttons are INSIDE the screen, in the lower zone.
+ * Response labels are INSIDE the screen, in the lower zone.
  * They reflect the available responses from the CPDLC message catalog.
+ * The actual interaction happens via the PHYSICAL side buttons.
  *
  * Color rules:
- * - Message text: white (static) + blue (parameters)
- * - Responded message: entirely green
- * - Response button: normal = green text; pressed/responding = green bg
+ * - Message text: green (static) + cyan/blue (parameters)
+ * - Pilot response (sent): green highlight background, black text
+ * - Pilot response (draft): cyan highlight background, black text
+ * - ATC reply in chain: normal green text (no highlight)
  * - Status badge top-right: "OPEN" when unresponded, response label in
- *   green highlight when responded
+ *   green highlight when responded or STBY
+ *
+ * @see docs/acars-ref-gold/messaging.md — CPDLC dialog exchange model
+ * @see docs/acars-ref-gold/cpdlc_message_reference.md — Response attributes
+ * @see docs/sdk/envelopes-and-stack.md — MIN/MRN linking in envelope stack
  */
 
 import { useRef, useState } from "react";
@@ -69,14 +98,28 @@ interface DcduScreenProps {
 // ──────────────────────────────────────────────────────────────────────
 
 /**
- * Arrange response intents into a 2×2 grid matching real DCDU layout.
+ * Arrange response intents into a 2×2 grid matching real A320 DCDU layout.
  *
- * Standard WU layout:
+ * The CPDLC catalog defines a response_attr per message element (WU, AN, R, Y, N).
+ * `getResponseIntents()` in catalog.ts resolves these to concrete response labels
+ * and downlink IDs. This function maps those intents to the 4 screen positions.
+ *
+ * Standard WU layout (most common for clearances):
  *   top-left:  *UNABLE     top-right: STBY*
  *   bot-left:  (empty)     bot-right: WILCO*
  *
+ * AN layout (yes/no questions):
+ *   top-left:  *NEGATIVE   top-right: STBY*
+ *   bot-left:  (empty)     bot-right: AFFIRM*
+ *
+ * R layout (acknowledgements):
+ *   top-left:  (empty)     top-right: STBY*
+ *   bot-left:  (empty)     bot-right: ROGER*
+ *
  * The intents come from the catalog. We match by well-known labels
  * and position them accordingly.
+ *
+ * @see docs/acars-ref-gold/cpdlc_message_reference.md — response attribute definitions
  */
 interface ResponseGrid {
   topLeft: ResponseIntent | null;
@@ -150,8 +193,12 @@ export default function DcduScreen({
   /** Index of the currently viewed message (navigate with MSG+/MSG-). */
   const [viewIndex, setViewIndex] = useState(-1);
 
-  // Build a filtered list that hides messages linked to an uplink dialog.
-  // These linked responses are shown inline under the uplink they respond to.
+  // Build a filtered list that hides messages belonging to a dialog chain.
+  // A dialog chain = all messages whose MRN references an uplink's MIN.
+  // These are displayed inline under the root uplink in MessageView
+  // (via `linkedResponses`), so they must not appear as separate entries
+  // in the MSG+/MSG- navigation list.
+  // @see docs/acars-ref-gold/messaging.md — dialog linking via MIN/MRN
   const visibleMessages = messages.filter((m) => {
     if (m.mrn == null) return true;
     // If this message (outgoing OR incoming) references an uplink's MIN,
@@ -417,6 +464,17 @@ function IdleView({ session }: { session: CpdlcSessionView | null }) {
 
 // ──────────────────────────────────────────────────────────────────────
 // Message view (upper zone)
+//
+// Renders the root message and all linked responses in the dialog chain.
+// The `linkedResponses` array contains every message whose MRN equals
+// this message's MIN — i.e. all pilot responses and ATC closures.
+//
+// Visual rules:
+//   - Outgoing (pilot) responses → highlighted background (green=sent, cyan=draft)
+//   - Incoming (ATC) messages in chain → normal green text, no highlight
+//   - Separator "---" between each message in the chain
+//
+// @see docs/acars-ref-gold/messaging.md — dialog states and closure
 // ──────────────────────────────────────────────────────────────────────
 
 function MessageView({ msg, linkedResponses = [] }: { msg: DcduMessage; linkedResponses?: DcduMessage[] }) {
@@ -476,9 +534,19 @@ function MessageView({ msg, linkedResponses = [] }: { msg: DcduMessage; linkedRe
 // ──────────────────────────────────────────────────────────────────────
 // Status badge (top-right corner)
 //
-// - "OPEN"  → message awaiting pilot response
-// - "WILCO" (green highlight) → pilot has responded
-// - "SENDING" / "SENT" → outgoing message status
+// State machine for incoming uplinks:
+//   OPEN → pilot has not responded yet
+//   STBY → pilot sent STANDBY (non-definitive; can still respond)
+//   WILCO / UNABLE / ROGER / AFFIRM / NEGATIVE → definitive closure
+//   (badge text derived from respondedWith; style = green highlight)
+//
+// State machine for outgoing downlinks:
+//   SENDING → message in-flight to server
+//   SENT → server acknowledged
+//
+// The server is the source of truth for dialog closure. The client
+// never unilaterally closes a dialog — it just reflects server state.
+// @see docs/acars-ref-gold/messaging.md — dialog state transitions
 // ──────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ msg }: { msg: DcduMessage }) {

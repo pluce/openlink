@@ -2,7 +2,7 @@
 title: Envelopes & Stack
 description: Mirrored documentation from docs/sdk/envelopes-and-stack.md
 sidebar:
-  order: 5
+  order: 6
 ---
 
 > Source: docs/sdk/envelopes-and-stack.md (synced automatically)

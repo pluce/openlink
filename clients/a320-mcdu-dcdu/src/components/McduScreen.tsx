@@ -1,11 +1,27 @@
 /**
  * McduScreen.tsx — Multifunction Control and Display Unit (MCDU) display.
  *
- * Faithful reproduction of the A320 MCDU screen layout:
+ * Faithful reproduction of the A320 MCDU screen layout for CPDLC message
+ * composition. The pilot navigates sub-pages (LAT REQ, VERT REQ, TEXT, etc.),
+ * fills argument fields via the scratchpad, and accumulates message elements.
+ * Once composed, pressing "XFR TO DCDU" transfers the draft to the DCDU.
  *
- * Screen grid: 24 characters wide × 14 lines tall (monospace).
+ * ## Message composition flow
  *
- * Line layout (14 lines):
+ *   1. Pilot navigates to a request page (e.g. VERT REQ)
+ *   2. Types a value in the scratchpad (e.g. "FL380")
+ *   3. Presses an LSK → `addElement(dmId, argType)` parses the value,
+ *      stores it in `fieldValues`, and pushes a `MessageElement` into
+ *      `pendingElements`.
+ *   4. Pilot can navigate to other pages and repeat — elements accumulate.
+ *   5. On ATC MENU (or any sub-page footer), pressing XFR TO DCDU calls
+ *      `doTransferToDcdu()` → all pending elements are sent to the DCDU
+ *      as a single draft message.
+ *
+ * ## Screen grid layout
+ *
+ *   24 characters wide × 14 lines tall (monospace).
+ *
  *   Line  1        — Title (large font, centred)
  *   Lines 2,4,6,8,10,12 — Labels  (small font 0.75×, non-interactive)
  *   Lines 3,5,7,9,11,13 — Data    (large font, aligned with LSK L1–L6 / R1–R6)
@@ -17,6 +33,10 @@
  *   - The scratchpad is NOT tied to any specific field
  *
  * LSK buttons are **physical** — rendered outside the screen bezel.
+ *
+ * @see docs/acars-ref-gold/cpdlc_message_reference.md — DM message catalog
+ * @see docs/acars-ref-gold/messaging.md — CPDLC message exchange model
+ * @see spec/cpdlc/catalog.v1.json — Machine-readable CPDLC catalog
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -133,6 +153,22 @@ export default function McduScreen({
   /**
    * Parse scratchpad value and store it in a field + add to pending elements.
    * The message is NOT sent to DCDU yet — pilot must press XFR TO DCDU.
+   *
+   * @param dmId   — CPDLC Downlink Message identifier (e.g. "DM9" = REQUEST CLIMB
+   *                  TO [level]). Maps to an entry in `catalog.v1.json`.
+   *                  @see docs/acars-ref-gold/cpdlc_message_reference.md
+   * @param argType — Argument type expected by this DM message. Determines how
+   *                  the scratchpad value is parsed:
+   *                  • "Level"    — Strip FL prefix, parseInt. ≤999 → FL, >999 → altitude ft
+   *                  • "Speed"    — parseInt (knots or Mach)
+   *                  • "Degrees"  — parseInt (heading / ground track)
+   *                  • "Position" — String as-is (waypoint name)
+   *                  • "FreeText" — String as-is
+   *                  • undefined  — No argument (e.g. DM65 DUE TO WEATHER)
+   *
+   * Dedup policy:
+   *   - DM67 (free text) and no-arg messages allow stacking (multiple instances)
+   *   - All others replace any existing element with the same DM ID
    */
   const addElement = (dmId: string, argType?: string) => {
     const args: CpdlcArgument[] = [];
@@ -168,6 +204,11 @@ export default function McduScreen({
 
   /**
    * Transfer all pending elements to the DCDU as a draft.
+   *
+   * Calls `onTransferToDcdu(elements)` which (in useOpenLink) creates a
+   * DcduMessage with status "draft" and auto-links it to the most recent
+   * OPEN uplink via MRN if one exists.
+   * @see docs/acars-ref-gold/messaging.md — dialog linking via MIN/MRN
    */
   const doTransferToDcdu = () => {
     if (pendingElements.length === 0) return;
@@ -199,7 +240,14 @@ export default function McduScreen({
   /** Whether there are pending elements to transfer. */
   const hasPending = pendingElements.length > 0;
 
-  /** Standard footer rows shared by all sub-pages (ERASE + RETURN / XFR TO DCDU). */
+  /**
+   * Standard footer rows shared by all sub-pages (ERASE + RETURN / XFR TO DCDU).
+   *
+   * Row 5: ERASE — clears all pending elements and field values.
+   * Row 6: RETURN (L6) — navigates back to ATC MENU without losing pending elements.
+   *         XFR TO DCDU (R6) — visible only when `pendingElements.length > 0`;
+   *         transfers the composed multi-element message to the DCDU as a draft.
+   */
   const subPageFooter = (): McduRow[] => [
     {
       labelLeft: "INPUTS",
@@ -273,7 +321,7 @@ export default function McduScreen({
       case "CONNECTION_STATUS": {
         const activeAtc = session?.active_connection?.peer ?? "----";
         const activePhase = session?.active_connection?.phase;
-        const nextAtc = session?.inactive_connection?.peer ?? session?.next_data_authority?.callsign ?? "----";
+        const nextAtc = session?.inactive_connection?.peer ?? session?.next_data_authority ?? "----";
 
         const activeColor: McduColor =
           activePhase === "Connected"
@@ -352,6 +400,11 @@ export default function McduScreen({
       }
 
       // ────────────────── LAT REQ ──────────────────
+      // DM22 = REQUEST DIRECT TO [position]
+      // DM27 = REQUEST WEATHER DEVIATION UP TO [distance]
+      // DM70 = REQUEST HEADING [degrees]
+      // DM65 = DUE TO WEATHER    (no arg, stackable)
+      // DM66 = DUE TO A/C PERF   (no arg, stackable)
       case "LAT_REQ":
         return {
           title: "ATC LAT REQ",
@@ -389,6 +442,12 @@ export default function McduScreen({
         };
 
       // ────────────────── VERT REQ ──────────────────
+      // DM9  = REQUEST CLIMB TO [level]
+      // DM10 = REQUEST DESCENT TO [level]
+      // DM6  = REQUEST [level]  (generic altitude/FL request)
+      // DM18 = REQUEST [speed]
+      // DM65 = DUE TO WEATHER    (no arg, stackable)
+      // DM66 = DUE TO A/C PERF   (no arg, stackable)
       case "VERT_REQ":
         return {
           title: "ATC VERT REQ",
@@ -424,6 +483,8 @@ export default function McduScreen({
         };
 
       // ────────────────── WHEN CAN WE ──────────────────
+      // DM49 = WHEN CAN WE EXPECT [speed]
+      // DM50 = WHEN CAN WE EXPECT [level]
       case "WHEN_CAN_WE":
         return {
           title: "ATC WHEN CAN WE",
@@ -445,6 +506,10 @@ export default function McduScreen({
         };
 
       // ────────────────── OTHER REQ ──────────────────
+      // DM18 = REQUEST [speed]
+      // DM70 = REQUEST HEADING [degrees]
+      // DM20 = REQUEST VOICE CONTACT
+      // DM25 = REQUEST CLEARANCE
       case "OTHER_REQ":
         return {
           title: "ATC OTHER REQ",
@@ -472,6 +537,7 @@ export default function McduScreen({
         };
 
       // ────────────────── TEXT ──────────────────
+      // DM67 = [free text]  (stackable — multiple free text lines accumulate)
       case "TEXT":
         return {
           title: "ATC TEXT",
@@ -489,6 +555,9 @@ export default function McduScreen({
         };
 
       // ────────────────── REPORTS ──────────────────
+      // DM32 = PRESENT LEVEL [level]
+      // DM48 = PRESENT POSITION [position]
+      // DM34 = PRESENT SPEED [speed]
       case "REPORTS":
         return {
           title: "ATC REPORTS",

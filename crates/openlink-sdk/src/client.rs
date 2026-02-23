@@ -33,6 +33,7 @@ use openlink_models::{
 use crate::credentials::OpenLinkCredentials;
 use crate::error::SdkError;
 use crate::subjects::NatsSubjects;
+use crate::{LOGICAL_ACK_DOWNLINK_ID, LOGICAL_ACK_UPLINK_ID};
 
 /// A connected OpenLink participant.
 ///
@@ -300,7 +301,7 @@ impl OpenLinkClient {
             .build()
     }
 
-    /// Build an ATC → aircraft Next Data Authority CPDLC message.
+    /// Build an ATC → aircraft Next Data Authority CPDLC message (`UM160`).
     pub fn cpdlc_next_data_authority(
         &self,
         atc_callsign: &str,
@@ -315,7 +316,7 @@ impl OpenLinkClient {
             .build()
     }
 
-    /// Build an ATC → aircraft CPDLC contact request.
+    /// Build an ATC → aircraft CPDLC contact request (`UM117`).
     pub fn cpdlc_contact_request(
         &self,
         atc_callsign: &str,
@@ -330,7 +331,7 @@ impl OpenLinkClient {
             .build()
     }
 
-    /// Build an ATC → aircraft CPDLC end-service message.
+    /// Build an ATC → aircraft CPDLC end-service message (`UM161`).
     pub fn cpdlc_end_service(
         &self,
         atc_callsign: &str,
@@ -388,6 +389,31 @@ impl OpenLinkClient {
             .from(aircraft_callsign)
             .to(station_callsign)
             .application_message_with_mrn(elements, mrn)
+            .build()
+    }
+
+    /// Build a CPDLC Logical Acknowledgement response to a received message.
+    ///
+    /// Uses `DM100` when sent by an aircraft, `UM227` when sent by a station.
+    /// `mrn` must reference the received message MIN.
+    pub fn cpdlc_logical_ack(
+        &self,
+        sender_callsign: &str,
+        receiver_callsign: &str,
+        aircraft_callsign: &str,
+        aircraft_address: &AcarsEndpointAddress,
+        mrn: u8,
+    ) -> OpenLinkMessage {
+        let ack_id = if sender_callsign == aircraft_callsign {
+            LOGICAL_ACK_DOWNLINK_ID
+        } else {
+            LOGICAL_ACK_UPLINK_ID
+        };
+
+        MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
+            .from(sender_callsign)
+            .to(receiver_callsign)
+            .application_message_with_mrn(vec![MessageElement::new(ack_id, vec![])], Some(mrn))
             .build()
     }
 

@@ -2,7 +2,7 @@
 title: Quickstart (Raw NATS)
 description: Mirrored documentation from docs/sdk/quickstart-raw-nats.md
 sidebar:
-  order: 8
+  order: 11
 ---
 
 > Source: docs/sdk/quickstart-raw-nats.md (synced automatically)

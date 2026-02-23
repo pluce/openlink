@@ -11,6 +11,8 @@
 //!   publishing and subscribing to OpenLink messages.
 //! * [`NatsSubjects`] — canonical NATS subject definitions shared
 //!   by clients and servers alike.
+//! * [`cpdlc_runtime`] — shared CPDLC runtime rules (logical ACK,
+//!   short-response selection, dialogue-close helpers).
 //! * [`SdkError`] — unified error type for all SDK operations.
 //! * [`OpenLinkCredentials`] — portable credential struct (seed,
 //!   JWT, CID).
@@ -39,6 +41,7 @@
 //! ```
 
 pub mod client;
+pub mod cpdlc_runtime;
 pub mod credentials;
 pub mod error;
 pub mod subjects;
@@ -47,6 +50,12 @@ pub use client::OpenLinkClient;
 pub use credentials::OpenLinkCredentials;
 pub use error::SdkError;
 pub use subjects::NatsSubjects;
+
+pub use cpdlc_runtime::{
+    choose_short_response_intents, closes_dialogue_response_elements,
+    is_logical_ack_element_id, message_contains_logical_ack, response_attr_to_intents,
+    should_auto_send_logical_ack, LOGICAL_ACK_DOWNLINK_ID, LOGICAL_ACK_UPLINK_ID,
+};
 
 // Re-export builders from openlink-models for ergonomic usage.
 pub use openlink_models::{

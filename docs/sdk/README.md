@@ -3,11 +3,22 @@
 This section is written for teams integrating OpenLink into:
 
 - an aircraft product (EFB, DCDU, FMC/CDU integration, cockpit plugin),
-- an ATC product (controller client, ground station software).
+- an ATC product (controller client, ground station software),
+- or a new language SDK implementation.
 
-The goal is to provide a clear integration path without requiring server-internal knowledge.
+## What you can do with OpenLink
 
-## Recommended reading path
+- exchange CPDLC messages over OpenLink envelopes,
+- run realistic CPDLC operational flows (logon, connection, authority transfer, end service),
+- consume authoritative session updates and station presence,
+- integrate through high-level SDKs or low-level raw NATS,
+- validate interoperability with catalog-driven conformance fixtures.
+
+See [OpenLink capabilities](capabilities.md).
+
+## How OpenLink works (architecture and concepts)
+
+Core reading order:
 
 1. [General concepts](concepts.md)
 2. [Integration architecture](integration-architecture.md)
@@ -15,11 +26,29 @@ The goal is to provide a clear integration path without requiring server-interna
 4. [Envelopes and message stack](envelopes-and-stack.md)
 5. [Addressing and routing](addressing-routing.md)
 6. [Stations and presence (online/offline)](stations-presence.md)
-7. [Raw NATS quickstart](quickstart-raw-nats.md)
-8. [High-level API contract](high-level-api-contract.md)
-9. [Conformance profile](conformance-profile.md)
-10. [Integration checklist](integration-checklist.md)
-11. [CPDLC reference](reference/README.md)
+
+## Integrating OpenLink with existing applications
+
+Recommended path for product teams:
+
+1. [Integrate with SDKs](integrate-with-sdks.md)
+2. [High-level API contract](high-level-api-contract.md)
+3. [Integration checklist](integration-checklist.md)
+4. [Conformance profile](conformance-profile.md)
+5. [Conformance test matrix](conformance-test-matrix.md)
+
+If needed, use [Raw NATS quickstart](quickstart-raw-nats.md).
+
+## Developing a new SDK
+
+Start here:
+
+1. [Develop a new SDK](develop-new-sdk.md)
+2. [Polyglot SDK contract](polyglot-sdk-contract.md)
+3. [TypeScript SDK compliance profile](typescript-sdk-compliance.md)
+4. [Conformance profile](conformance-profile.md)
+5. [Conformance test matrix](conformance-test-matrix.md)
+6. [CPDLC reference](reference/README.md)
 
 ## Design principle
 

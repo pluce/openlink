@@ -2,7 +2,7 @@
 title: Stations Presence
 description: Mirrored documentation from docs/sdk/stations-presence.md
 sidebar:
-  order: 7
+  order: 8
 ---
 
 > Source: docs/sdk/stations-presence.md (synced automatically)

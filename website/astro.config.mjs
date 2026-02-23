@@ -25,22 +25,24 @@ export default defineConfig({
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/pluce/openlink' }],
 			sidebar: [
 				{
-					label: 'OpenLink',
+					label: 'Start Here',
 					items: [
 						{ label: 'Overview', slug: '' },
-						{ label: 'OpenLink Overview Doc', slug: 'generated/overview' },
+						{ label: 'Platform Overview', slug: 'generated/overview' },
+						{ label: 'Guides', slug: 'guides' },
+						{ label: 'Reference', slug: 'reference-home' },
 					],
 				},
 				{
-					label: 'SDK Docs',
+					label: 'SDK & Integration',
 					autogenerate: { directory: 'generated/docs/sdk' },
 				},
 				{
-					label: 'Crates',
+					label: 'Runtime & Crates',
 					autogenerate: { directory: 'generated/crates' },
 				},
 				{
-					label: 'Spec',
+					label: 'Specifications',
 					autogenerate: { directory: 'generated/spec' },
 				},
 			],

@@ -1,0 +1,175 @@
+{
+  "version": "1.0.0",
+  "description": "Canonical OpenLink wire examples for serialization/deserialization parity.",
+  "examples": [
+    {
+      "id": "acars-cpdlc-application-uplink",
+      "direction": "server_to_aircraft",
+      "envelope": {
+        "id": "018f4d84-4b2c-7a01-a3f1-fd5d5300a001",
+        "timestamp": "2026-01-01T10:00:00Z",
+        "correlation_id": "session-abc-001",
+        "routing": {
+          "source": { "Address": ["LFPGAPP", "ATC-001"] },
+          "destination": { "Address": ["AFR123", "AFR123"] }
+        },
+        "payload": {
+          "type": "Acars",
+          "data": {
+            "routing": {
+              "aircraft": {
+                "callsign": "AFR123",
+                "address": "AFR123"
+              }
+            },
+            "message": {
+              "type": "CPDLC",
+              "data": {
+                "source": "LFPGAPP",
+                "destination": "AFR123",
+                "message": {
+                  "type": "Application",
+                  "data": {
+                    "min": 21,
+                    "mrn": null,
+                    "elements": [
+                      {
+                        "id": "UM20",
+                        "args": []
+                      }
+                    ],
+                    "timestamp": "2026-01-01T10:00:00Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "token": "<opaque-token>"
+      }
+    },
+    {
+      "id": "acars-cpdlc-logical-ack-downlink",
+      "direction": "aircraft_to_server",
+      "envelope": {
+        "id": "018f4d84-4b2c-7a01-a3f1-fd5d5300a002",
+        "timestamp": "2026-01-01T10:00:05Z",
+        "correlation_id": "session-abc-001",
+        "routing": {
+          "source": { "Address": ["AFR123", "AFR123"] },
+          "destination": { "Server": "OPENLINK-SERVER" }
+        },
+        "payload": {
+          "type": "Acars",
+          "data": {
+            "routing": {
+              "aircraft": {
+                "callsign": "AFR123",
+                "address": "AFR123"
+              }
+            },
+            "message": {
+              "type": "CPDLC",
+              "data": {
+                "source": "AFR123",
+                "destination": "LFPGAPP",
+                "message": {
+                  "type": "Application",
+                  "data": {
+                    "min": 0,
+                    "mrn": 21,
+                    "elements": [
+                      {
+                        "id": "DM100",
+                        "args": []
+                      }
+                    ],
+                    "timestamp": "2026-01-01T10:00:05Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "token": "<opaque-token>"
+      }
+    },
+    {
+      "id": "acars-cpdlc-meta-session-update",
+      "direction": "server_to_station",
+      "envelope": {
+        "id": "018f4d84-4b2c-7a01-a3f1-fd5d5300a003",
+        "timestamp": "2026-01-01T10:00:10Z",
+        "correlation_id": "session-abc-001",
+        "routing": {
+          "source": { "Server": "OPENLINK-SERVER" },
+          "destination": { "Address": ["LFPGAPP", "ATC-001"] }
+        },
+        "payload": {
+          "type": "Acars",
+          "data": {
+            "routing": {
+              "aircraft": {
+                "callsign": "AFR123",
+                "address": "AFR123"
+              }
+            },
+            "message": {
+              "type": "CPDLC",
+              "data": {
+                "source": "OPENLINK-SERVER",
+                "destination": "LFPGAPP",
+                "message": {
+                  "type": "Meta",
+                  "data": {
+                    "type": "SessionUpdate",
+                    "data": {
+                      "session": {
+                        "aircraft": "AFR123",
+                        "aircraft_address": "AFR123",
+                        "active_connection": {
+                          "peer": "LFPGAPP",
+                          "phase": "Connected"
+                        },
+                        "inactive_connection": null,
+                        "next_data_authority": null
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "token": "<opaque-token>"
+      }
+    },
+    {
+      "id": "station-status-meta",
+      "direction": "station_to_server",
+      "envelope": {
+        "id": "018f4d84-4b2c-7a01-a3f1-fd5d5300a004",
+        "timestamp": "2026-01-01T10:00:15Z",
+        "correlation_id": null,
+        "routing": {
+          "source": { "Address": ["LFPGAPP", "ATC-001"] },
+          "destination": { "Server": "OPENLINK-SERVER" }
+        },
+        "payload": {
+          "type": "Meta",
+          "data": {
+            "StationStatus": [
+              "LFPGAPP",
+              "Online",
+              {
+                "callsign": "LFPGAPP",
+                "address": "ATC-001"
+              }
+            ]
+          }
+        },
+        "token": "<opaque-token>"
+      }
+    }
+  ]
+}

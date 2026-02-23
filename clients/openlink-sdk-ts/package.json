@@ -1,0 +1,18 @@
+{
+  "name": "@openlink/sdk-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenLink TypeScript SDK for CPDLC/OpenLink envelope handling and client runtime helpers.",
+  "main": "src/index.ts",
+  "scripts": {
+    "test:conformance": "node --import tsx --test tests/runtime-vectors.test.ts"
+  },
+  "dependencies": {
+    "nats.ws": "^1.30.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  }
+}

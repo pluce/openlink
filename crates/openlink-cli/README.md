@@ -98,17 +98,21 @@ cargo run -p openlink-cli -- \
 
 ## Supported Messages
 
-### Meta / Session Management
+### Session / Handover helpers
 - `logon-request`: Initiate a session (Pilot).
 - `logon-response`: Accept/Reject a session (ATC).
 - `connection-request`: Open a CPDLC connection (ATC).
 - `connection-response --accepted --station <ATC>`: Confirm connection (Pilot).
-- `contact-request --station <NEXT_ATC>`: Ask aircraft to contact next station (ATC).
-- `contact-response --accepted --station <ATC>`: Reply to contact request (Pilot).
-- `contact-complete --station <ATC_OR_AIRCRAFT>`: Mark contact transfer complete.
-- `next-data-authority`: Designate next unit (ATC).
+- `contact-request --station <NEXT_ATC>`: Sends standard `UM117 CONTACT [unit] [frequency]` helper (ATC).
+- `contact-response --accepted --station <ATC>`: Sends short response helper (`DM0`/`DM1`) (Pilot).
+- `contact-complete --station <ATC_OR_AIRCRAFT>`: Sends standard `DM89 MONITORING [unit] [frequency]` helper.
+- `next-data-authority`: Sends standard `UM160 NEXT DATA AUTHORITY` helper (ATC).
 - `logon-forward`: Forward session to next unit (ATC).
-- `end-service`: Terminate current CPDLC service (ATC).
+- `end-service`: Sends standard `UM161 END SERVICE` helper (ATC).
+
+Notes:
+- Only logon/connection/session-update/forward remain CPDLC protocol meta messages.
+- Handover/termination helpers above are emitted as CPDLC **application** messages.
 
 ### Operational (Planned)
 - `climb-to --level FL350`: Uplink instruction (ATC).

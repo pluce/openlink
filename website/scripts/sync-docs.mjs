@@ -8,6 +8,9 @@ const outRoot = path.join(websiteRoot, 'src', 'content', 'docs', 'generated');
 const docsToMirror = [
   // SDK docs (kept with same structure)
   'docs/sdk/README.md',
+  'docs/sdk/capabilities.md',
+  'docs/sdk/integrate-with-sdks.md',
+  'docs/sdk/develop-new-sdk.md',
   'docs/sdk/quickstart-raw-nats.md',
   'docs/sdk/concepts.md',
   'docs/sdk/integration-architecture.md',
@@ -17,7 +20,10 @@ const docsToMirror = [
   'docs/sdk/stations-presence.md',
   'docs/sdk/integration-checklist.md',
   'docs/sdk/conformance-profile.md',
+  'docs/sdk/conformance-test-matrix.md',
   'docs/sdk/high-level-api-contract.md',
+  'docs/sdk/polyglot-sdk-contract.md',
+  'docs/sdk/typescript-sdk-compliance.md',
   'docs/sdk/reference/README.md',
   'docs/sdk/reference/cpdlc-messages.md',
 
@@ -33,22 +39,29 @@ const docsToMirror = [
 
   // Spec docs
   'spec/README.md',
+  'spec/sdk-conformance/README.md',
 ];
 
 const metadataByPath = {
   'docs/sdk/README.md': { title: 'SDK Integrator Guide', order: 1 },
-  'docs/sdk/concepts.md': { title: 'Concepts', order: 2 },
-  'docs/sdk/integration-architecture.md': { title: 'Integration Architecture', order: 3 },
-  'docs/sdk/addressing-routing.md': { title: 'Addressing & Routing', order: 4 },
-  'docs/sdk/envelopes-and-stack.md': { title: 'Envelopes & Stack', order: 5 },
-  'docs/sdk/nats-transport.md': { title: 'NATS Transport', order: 6 },
-  'docs/sdk/stations-presence.md': { title: 'Stations Presence', order: 7 },
-  'docs/sdk/quickstart-raw-nats.md': { title: 'Quickstart (Raw NATS)', order: 8 },
-  'docs/sdk/integration-checklist.md': { title: 'Integration Checklist', order: 9 },
-  'docs/sdk/conformance-profile.md': { title: 'Conformance Profile', order: 10 },
-  'docs/sdk/high-level-api-contract.md': { title: 'High-Level API Contract', order: 11 },
-  'docs/sdk/reference/README.md': { title: 'SDK Reference', order: 12 },
-  'docs/sdk/reference/cpdlc-messages.md': { title: 'CPDLC Messages', order: 13 },
+  'docs/sdk/capabilities.md': { title: 'OpenLink Capabilities', order: 2 },
+  'docs/sdk/concepts.md': { title: 'Concepts', order: 3 },
+  'docs/sdk/integration-architecture.md': { title: 'Integration Architecture', order: 4 },
+  'docs/sdk/nats-transport.md': { title: 'NATS Transport', order: 5 },
+  'docs/sdk/envelopes-and-stack.md': { title: 'Envelopes & Stack', order: 6 },
+  'docs/sdk/addressing-routing.md': { title: 'Addressing & Routing', order: 7 },
+  'docs/sdk/stations-presence.md': { title: 'Stations Presence', order: 8 },
+  'docs/sdk/integrate-with-sdks.md': { title: 'Integrate with SDKs', order: 9 },
+  'docs/sdk/high-level-api-contract.md': { title: 'High-Level API Contract', order: 10 },
+  'docs/sdk/quickstart-raw-nats.md': { title: 'Quickstart (Raw NATS)', order: 11 },
+  'docs/sdk/integration-checklist.md': { title: 'Integration Checklist', order: 12 },
+  'docs/sdk/develop-new-sdk.md': { title: 'Develop a New SDK', order: 13 },
+  'docs/sdk/polyglot-sdk-contract.md': { title: 'Polyglot SDK Contract', order: 14 },
+  'docs/sdk/typescript-sdk-compliance.md': { title: 'TypeScript SDK Compliance', order: 15 },
+  'docs/sdk/conformance-profile.md': { title: 'Conformance Profile', order: 16 },
+  'docs/sdk/conformance-test-matrix.md': { title: 'Conformance Test Matrix', order: 17 },
+  'docs/sdk/reference/README.md': { title: 'SDK Reference', order: 18 },
+  'docs/sdk/reference/cpdlc-messages.md': { title: 'CPDLC Messages', order: 19 },
 
   'crates/openlink-models/README.md': { title: 'openlink-models', order: 1 },
   'crates/openlink-sdk/README.md': { title: 'openlink-sdk', order: 2 },
@@ -60,6 +73,7 @@ const metadataByPath = {
   'crates/mock-oidc/README.md': { title: 'mock-oidc', order: 8 },
 
   'spec/README.md': { title: 'Spec Reference', order: 1 },
+  'spec/sdk-conformance/README.md': { title: 'SDK Conformance Fixtures', order: 2 },
 };
 
 const rewriteInternalDocLinks = (content, relativeSource, currentSlug) =>

@@ -2,7 +2,7 @@
 title: CPDLC Messages
 description: Mirrored documentation from docs/sdk/reference/cpdlc-messages.md
 sidebar:
-  order: 13
+  order: 19
 ---
 
 > Source: docs/sdk/reference/cpdlc-messages.md (synced automatically)

@@ -1,13 +1,23 @@
 ---
-title: Example Reference
-description: A reference page in my new Starlight docs site.
-draft: true
-slug: legacy/example-reference
+title: Reference
+description: Canonical protocol and contract references for OpenLink.
+slug: reference-home
 ---
 
-Reference pages are ideal for outlining how things work in terse and clear terms.
-Less concerned with telling a story or addressing a specific use case, they should give a comprehensive outline of what you're documenting.
+Use this section for canonical definitions and compatibility contracts.
 
-## Further reading
+## Protocol reference
 
-- Read [about reference](https://diataxis.fr/reference/) in the Diátaxis framework
+- [CPDLC message reference](../generated/docs/sdk/reference/cpdlc-messages/)
+- [Protocol spec root](../generated/spec/)
+
+## Integration and SDK contracts
+
+- [High-level API contract](../generated/docs/sdk/high-level-api-contract/)
+- [Polyglot SDK contract](../generated/docs/sdk/polyglot-sdk-contract/)
+- [Conformance profile](../generated/docs/sdk/conformance-profile/)
+- [Conformance test matrix](../generated/docs/sdk/conformance-test-matrix/)
+
+## SDK conformance fixtures
+
+- [SDK conformance spec folder](../generated/spec/sdk-conformance/)

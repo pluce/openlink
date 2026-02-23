@@ -2,7 +2,7 @@
 title: Addressing & Routing
 description: Mirrored documentation from docs/sdk/addressing-routing.md
 sidebar:
-  order: 4
+  order: 7
 ---
 
 > Source: docs/sdk/addressing-routing.md (synced automatically)

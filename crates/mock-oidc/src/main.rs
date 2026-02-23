@@ -90,6 +90,7 @@ struct AuthorizeParams {
     client_id: Option<String>,
     redirect_uri: String,
     state: Option<String>,
+    #[allow(dead_code)]
     response_type: Option<String>,
 }
 

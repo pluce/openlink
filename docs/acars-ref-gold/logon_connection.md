@@ -37,7 +37,7 @@ Voici une spécification fonctionnelle détaillée pour le processus d'identific
 Ce processus garantit que la responsabilité de l'avion passe de manière fluide et sécurisée d'un centre à l'autre `[1]`.
 
 * **Étape 1 (Notification du NDA) :** Le CDA actuel envoie un message montant `NEXT DATA AUTHORITY` (UM 160) contenant le code OACI de 4 caractères du prochain ATSU `[1]`. L'avion stocke cette information `[1]`.
-* **Étape 2 (Logon Forwarding) :** Le CDA transmet les informations de Logon de l'avion au prochain ATSU (généralement de manière transparente via le réseau sol-sol) ou demande à l'avion de s'identifier auprès du nouveau centre via un message `Contact Request` `[1]`.
+* **Étape 2 (Logon Forwarding) :** Le CDA transmet les informations de Logon de l'avion au prochain ATSU (généralement de manière transparente via le réseau sol-sol) ou demande à l'avion de s'identifier auprès du nouveau centre via un message de contact standard `UM 117 CONTACT` `[1]`.
 * **Étape 3 (Connexion Inactive) :** Le prochain ATSU envoie son `Connection Request`. Puisqu'il est le NDA reconnu (grâce à l'Étape 1), l'avion l'accepte en tant que connexion **Inactive** en arrière-plan `[1]`.
 * **Étape 4 (Terminaison) :** Au moment de franchir le secteur, le CDA envoie un message `Termination Request` (UM 161 END SERVICE), souvent concaténé avec un ordre de changement de fréquence vocale (ex: UM 117 CONTACT) `[1]`.
 * **Étape 5 (Bascule Active) :** Le pilote accepte le transfert (DM 0 WILCO) `[1]`. Le système de l'avion envoie automatiquement un `Termination Confirmation`, coupe la connexion avec l'ancien CDA, et **promeut la connexion inactive en connexion active** `[1]`. Le prochain ATSU devient le nouveau CDA et peut désormais envoyer des clairances `[1]`.

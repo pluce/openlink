@@ -2,7 +2,7 @@
 title: Integration Architecture
 description: Mirrored documentation from docs/sdk/integration-architecture.md
 sidebar:
-  order: 3
+  order: 4
 ---
 
 > Source: docs/sdk/integration-architecture.md (synced automatically)

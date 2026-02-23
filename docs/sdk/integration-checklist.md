@@ -21,6 +21,8 @@ Use this list as a go-live gate before production rollout.
 - [ ] Message IDs and metadata validated with `spec/cpdlc/catalog.v1.json`
 - [ ] Argument count/types validated before send
 - [ ] Response rules enforced (attribute, closing, suggestions)
+- [ ] Shared runtime vectors pass (`spec/sdk-conformance/runtime-vectors.v1.json`)
+- [ ] Shared wire examples pass (`spec/sdk-conformance/wire-examples.v1.json`)
 
 ## D) UX behavior
 
@@ -43,4 +45,5 @@ Use this list as a go-live gate before production rollout.
 ## Related pages
 
 - [Conformance profile](conformance-profile.md)
+- [Conformance test matrix](conformance-test-matrix.md)
 - [Stations and presence](stations-presence.md)

@@ -450,18 +450,35 @@ async fn main() -> io::Result<()> {
                                         aircraft_address,
                                         callsign,
                                         aircraft_callsign.clone(),
-                                        CpdlcMessageType::Meta(CpdlcMetaMessage::ContactRequest { station })
+                                        CpdlcMessageType::Application(openlink_models::CpdlcApplicationMessage {
+                                            min: 0,
+                                            mrn: None,
+                                            elements: vec![MessageElement::new(
+                                                "UM117",
+                                                vec![
+                                                    CpdlcArgument::UnitName(station.to_string()),
+                                                    CpdlcArgument::Frequency("UNKNOWN".to_string()),
+                                                ],
+                                            )],
+                                            timestamp: chrono::Utc::now(),
+                                        })
                                     )).await.expect("Failed to send contact request");
                                 },
                                 (true, false, CpdlcMessageCommand::ContactResponse { accepted, station }) => {
                                     if let Some(station) = station {
                                         println!("Preparing Contact Response to station '{:?}' - accepted: {:?}", station, accepted);
+                                        let response_id = if accepted { "DM0" } else { "DM1" };
                                         client.send_to_server(cpdlc_message(
                                             aircraft_callsign.clone(),
                                             aircraft_address,
                                             callsign,
                                             station,
-                                            CpdlcMessageType::Meta(CpdlcMetaMessage::ContactResponse { accepted })
+                                            CpdlcMessageType::Application(openlink_models::CpdlcApplicationMessage {
+                                                min: 0,
+                                                mrn: None,
+                                                elements: vec![MessageElement::new(response_id, vec![])],
+                                                timestamp: chrono::Utc::now(),
+                                            })
                                         )).await.expect("Failed to send contact response");
                                     } else {
                                         eprintln!("--station is required for pilot contact-response");
@@ -469,12 +486,24 @@ async fn main() -> io::Result<()> {
                                 },
                                 (_, _, CpdlcMessageCommand::ContactComplete { station }) => {
                                     println!("Preparing Contact Complete to '{:?}'", station);
+                                    let station_name = station.to_string();
                                     client.send_to_server(cpdlc_message(
                                         aircraft_callsign.clone(),
                                         aircraft_address,
                                         callsign,
                                         station,
-                                        CpdlcMessageType::Meta(CpdlcMetaMessage::ContactComplete)
+                                        CpdlcMessageType::Application(openlink_models::CpdlcApplicationMessage {
+                                            min: 0,
+                                            mrn: None,
+                                            elements: vec![MessageElement::new(
+                                                "DM89",
+                                                vec![
+                                                    CpdlcArgument::UnitName(station_name),
+                                                    CpdlcArgument::Frequency("UNKNOWN".to_string()),
+                                                ],
+                                            )],
+                                            timestamp: chrono::Utc::now(),
+                                        })
                                     )).await.expect("Failed to send contact complete");
                                 },
                                 (false, true, CpdlcMessageCommand::LogonForward { flight, origin, destination, new_station }) => {
@@ -494,13 +523,20 @@ async fn main() -> io::Result<()> {
                                 },
                                 (false, true, CpdlcMessageCommand::NextDataAuthority { nda_callsign, nda_address }) => {
                                     println!("Preparing Next Data Authority '{}' for aircraft '{:?}'", nda_callsign, aircraft_callsign);
+                                    let _ = nda_address;
                                     client.send_to_server(cpdlc_message(
                                         aircraft_callsign.clone(),
                                         aircraft_address,
                                         callsign,
                                         aircraft_callsign.clone(),
-                                        CpdlcMessageType::Meta(CpdlcMetaMessage::NextDataAuthority {
-                                            nda: AcarsRoutingEndpoint::new(nda_callsign, nda_address),
+                                        CpdlcMessageType::Application(openlink_models::CpdlcApplicationMessage {
+                                            min: 0,
+                                            mrn: None,
+                                            elements: vec![MessageElement::new(
+                                                "UM160",
+                                                vec![CpdlcArgument::FacilityDesignation(nda_callsign.to_string())],
+                                            )],
+                                            timestamp: chrono::Utc::now(),
                                         })
                                     )).await.expect("Failed to send next data authority");
                                 },
@@ -511,7 +547,12 @@ async fn main() -> io::Result<()> {
                                         aircraft_address,
                                         callsign,
                                         aircraft_callsign.clone(),
-                                        CpdlcMessageType::Meta(CpdlcMetaMessage::EndService)
+                                        CpdlcMessageType::Application(openlink_models::CpdlcApplicationMessage {
+                                            min: 0,
+                                            mrn: None,
+                                            elements: vec![MessageElement::new("UM161", vec![])],
+                                            timestamp: chrono::Utc::now(),
+                                        })
                                     )).await.expect("Failed to send END SERVICE");
                                 },
                                 (false, true, CpdlcMessageCommand::ClimbTo { level }) => {

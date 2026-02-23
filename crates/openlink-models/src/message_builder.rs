@@ -127,26 +127,50 @@ impl CpdlcMessageBuilder {
         self
     }
 
-    /// Contact request — ask aircraft to contact another station.
+    /// Contact request — ATC sends standard `UM117` (CONTACT [unit] [frequency]).
     pub fn contact_request(mut self, station: impl Into<String>) -> Self {
         let station: String = station.into();
-        self.message_type = Some(CpdlcMessageType::Meta(CpdlcMetaMessage::ContactRequest {
-            station: AcarsEndpointCallsign::new(&station),
+        self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
+            min: 0,
+            mrn: None,
+            elements: vec![MessageElement::new(
+                "UM117",
+                vec![
+                    CpdlcArgument::UnitName(station),
+                    CpdlcArgument::Frequency("UNKNOWN".to_string()),
+                ],
+            )],
+            timestamp: Utc::now(),
         }));
         self
     }
 
-    /// Contact response (accept / reject).
+    /// Contact response as short downlink (`DM0` WILCO or `DM1` UNABLE).
     pub fn contact_response(mut self, accepted: bool) -> Self {
-        self.message_type = Some(CpdlcMessageType::Meta(
-            CpdlcMetaMessage::ContactResponse { accepted },
-        ));
+        let id = if accepted { "DM0" } else { "DM1" };
+        self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
+            min: 0,
+            mrn: None,
+            elements: vec![MessageElement::new(id, vec![])],
+            timestamp: Utc::now(),
+        }));
         self
     }
 
-    /// Contact complete — indicates the contact handoff is finished.
+    /// Contact complete as standard `DM89` (MONITORING [unit] [frequency]).
     pub fn contact_complete(mut self) -> Self {
-        self.message_type = Some(CpdlcMessageType::Meta(CpdlcMetaMessage::ContactComplete));
+        self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
+            min: 0,
+            mrn: None,
+            elements: vec![MessageElement::new(
+                "DM89",
+                vec![
+                    CpdlcArgument::UnitName("UNKNOWN".to_string()),
+                    CpdlcArgument::Frequency("UNKNOWN".to_string()),
+                ],
+            )],
+            timestamp: Utc::now(),
+        }));
         self
     }
 
@@ -169,28 +193,32 @@ impl CpdlcMessageBuilder {
         self
     }
 
-    /// Set the Next Data Authority.
+    /// Set the Next Data Authority as standard `UM160`.
     pub fn next_data_authority(
         mut self,
         nda_callsign: impl Into<String>,
-        nda_address: impl Into<String>,
+        _nda_address: impl Into<String>,
     ) -> Self {
-        self.message_type = Some(CpdlcMessageType::Meta(
-            CpdlcMetaMessage::NextDataAuthority {
-                nda: AcarsRoutingEndpoint::new(
-                    nda_callsign.into().as_str(),
-                    nda_address.into().as_str(),
-                ),
-            },
-        ));
+        self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
+            min: 0,
+            mrn: None,
+            elements: vec![MessageElement::new(
+                "UM160",
+                vec![CpdlcArgument::FacilityDesignation(nda_callsign.into())],
+            )],
+            timestamp: Utc::now(),
+        }));
         self
     }
 
-    /// End service — ATC terminates the active connection.
+    /// End service — ATC sends standard `UM161`.
     pub fn end_service(mut self) -> Self {
-        self.message_type = Some(CpdlcMessageType::Meta(
-            CpdlcMetaMessage::EndService,
-        ));
+        self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
+            min: 0,
+            mrn: None,
+            elements: vec![MessageElement::new("UM161", vec![])],
+            timestamp: Utc::now(),
+        }));
         self
     }
 
@@ -206,7 +234,8 @@ impl CpdlcMessageBuilder {
 
     /// Build a full application-level CPDLC message from pre-built elements.
     ///
-    /// MIN is typically assigned by the server, so it defaults to 0 here.
+    /// MIN is assigned by the server; this builder uses `0` as a local placeholder
+    /// before server-side assignment.
     /// Use `raw_message()` if you need full control.
     pub fn application_message(mut self, elements: Vec<MessageElement>) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(

@@ -25,4 +25,4 @@ Une fois la première connexion établie, le pilote n'a plus à saisir d'adresse
 
 Le transfert Sol-Sol (Address Forwarding) : Avant que l'avion ne quitte un secteur, le centre de contrôle actuel transmet automatiquement l'adresse technique de l'avion et ses informations de connexion au centre de contrôle suivant via le réseau terrestre (protocoles AIDC ou OLDI).
 
-Le "Contact Request" Air-Sol : Si les centres ne sont pas interconnectés au sol, le centre de contrôle actuel envoie un message technique à l'avion (Contact Request) contenant la prochaine adresse OACI à utiliser. L'avionique exécute alors la demande de connexion de manière totalement invisible pour le pilote.
+Le message de contact Air-Sol (typiquement `UM 117 CONTACT`) : Si les centres ne sont pas interconnectés au sol, le centre de contrôle actuel envoie un message de contact à l'avion contenant la prochaine autorité à joindre. L'avionique exécute alors la demande de connexion de manière totalement invisible pour le pilote.

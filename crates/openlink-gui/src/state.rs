@@ -1,5 +1,8 @@
 use chrono::{DateTime, Utc};
-use openlink_models::{AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcSessionView, MessageElement, OpenLinkEnvelope, ResponseAttribute};
+use openlink_models::{
+    AcarsEndpointAddress, CpdlcConnectionPhase, CpdlcSessionView, MessageElement,
+    OpenLinkEnvelope, ResponseAttribute,
+};
 use openlink_sdk::OpenLinkClient;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -22,7 +25,17 @@ pub struct SavedStation {
     pub acars_address: String,
 }
 
-// ── Per-station (ATC) tracking ────────────────────────────────────────
+// ── Connection status for DCDU ────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum GroundStationStatus {
+    /// Not connected to any ground station
+    Disconnected,
+    /// Logon request sent, waiting for response
+    LogonPending(String),
+    /// Logon accepted, connection request received + confirmed
+    Connected(String),
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct AtcLinkedFlight {
@@ -40,19 +53,19 @@ pub struct ReceivedMessage {
     pub raw_json: String,
     pub envelope: Option<OpenLinkEnvelope>,
     pub from_callsign: Option<String>,
-    /// Target callsign (who the message is addressed to).
+    /// Optional destination callsign for outgoing messages.
     pub to_callsign: Option<String>,
     /// Human-readable serialized message text (from SerializedMessagePayload)
     pub display_text: Option<String>,
-    /// True if this message was sent by us (outgoing), false for received
+    /// Whether this message is locally-originated.
     pub is_outgoing: bool,
-    /// Message Identification Number (0–63) assigned by the server.
+    /// Server-assigned Message Identification Number.
     pub min: Option<u8>,
-    /// Message Reference Number — the MIN of the message this replies to.
+    /// Message Reference Number (links a response to a prior MIN).
     pub mrn: Option<u8>,
-    /// Effective response attribute for this message.
+    /// Effective CPDLC response attribute for incoming application messages.
     pub response_attr: Option<ResponseAttribute>,
-    /// Whether a closing response (WILCO/UNABLE/etc.) has been sent to this message.
+    /// Whether a dialogue has been closed from the UI perspective.
     pub responded: bool,
 }
 
@@ -73,41 +86,31 @@ pub struct TabState {
     // Setup fields
     pub setup: SetupFields,
 
-    // Server-authoritative CPDLC session state
-    pub session: Option<CpdlcSessionView>,
-
     // DCDU state
+    pub ground_station: GroundStationStatus,
     pub logon_input: String,
-
-    // ATC state (server-authoritative snapshots keyed by aircraft callsign)
-    pub atc_sessions: HashMap<String, CpdlcSessionView>,
-    pub selected_flight_idx: Option<usize>,
-    pub contact_input: String,
-    pub conn_mgmt_open: bool,
-    /// Which connection management action is being parameterized (e.g. "CONTACT")
-    pub pending_conn_mgmt_cmd: Option<String>,
-    pub atc_uplink_open: bool,
-
-    // Pilot state
+    pub session: Option<CpdlcSessionView>,
     pub pilot_downlink_open: bool,
-    /// Generic argument inputs for currently parameterized command.
-    pub cmd_arg_inputs: Vec<String>,
-    /// Search query used in command menus (uplink/downlink).
-    pub cmd_search_query: String,
-    /// Enable multi-element compose workflow.
-    pub compose_mode: bool,
-    /// Elements queued for the next composed application message.
-    pub compose_elements: Vec<MessageElement>,
-    /// Optional MRN used when composing a response with additional elements.
-    pub compose_mrn: Option<u8>,
-    /// In compose context, submitting the current parameter form sends all.
-    pub compose_send_after_param: bool,
-    /// Which downlink command is being parameterized (e.g. "DM6") — None = show menu
     pub pending_downlink_cmd: Option<String>,
-    /// Which uplink command is being parameterized (e.g. "UM20") — None = show menu
+
+    // ATC state
+    pub linked_flights: Vec<AtcLinkedFlight>,
+    pub selected_flight_idx: Option<usize>,
+    pub atc_sessions: HashMap<String, CpdlcSessionView>,
+    pub conn_mgmt_open: bool,
+    pub atc_uplink_open: bool,
+    pub contact_input: String,
+    pub pending_conn_mgmt_cmd: Option<String>,
     pub pending_uplink_cmd: Option<String>,
-    /// Optional restriction set for uplink menu (suggested replies context).
     pub suggested_uplink_ids: Vec<String>,
+
+    // Generic command/composition state (used by both DCDU and ATC views)
+    pub cmd_arg_inputs: Vec<String>,
+    pub cmd_search_query: String,
+    pub compose_mode: bool,
+    pub compose_elements: Vec<MessageElement>,
+    pub compose_mrn: Option<u8>,
+    pub compose_send_after_param: bool,
 
     // Common
     pub messages: Vec<ReceivedMessage>,
@@ -150,7 +153,7 @@ impl Default for SetupFields {
     fn default() -> Self {
         Self {
             station_type: StationType::Aircraft,
-            network_id: "demonetwork".to_string(),
+            network_id: "vatsim".to_string(),
             network_address: String::new(),
             callsign: String::new(),
             acars_address: String::new(),
@@ -165,24 +168,26 @@ impl TabState {
             label: "New".to_string(),
             phase: TabPhase::Setup,
             setup: SetupFields::default(),
-            session: None,
+            ground_station: GroundStationStatus::Disconnected,
             logon_input: String::new(),
-            atc_sessions: HashMap::new(),
-            selected_flight_idx: None,
-            contact_input: String::new(),
-            conn_mgmt_open: false,
-            pending_conn_mgmt_cmd: None,
-            atc_uplink_open: false,
+            session: None,
             pilot_downlink_open: false,
+            pending_downlink_cmd: None,
+            linked_flights: Vec::new(),
+            selected_flight_idx: None,
+            atc_sessions: HashMap::new(),
+            conn_mgmt_open: false,
+            atc_uplink_open: false,
+            contact_input: String::new(),
+            pending_conn_mgmt_cmd: None,
+            pending_uplink_cmd: None,
+            suggested_uplink_ids: Vec::new(),
             cmd_arg_inputs: Vec::new(),
             cmd_search_query: String::new(),
             compose_mode: false,
             compose_elements: Vec::new(),
             compose_mrn: None,
             compose_send_after_param: false,
-            pending_downlink_cmd: None,
-            pending_uplink_cmd: None,
-            suggested_uplink_ids: Vec::new(),
             messages: Vec::new(),
             nats_task_active: false,
         }

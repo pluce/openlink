@@ -12,7 +12,7 @@ use components::tab_bar::TabBar;
 use components::station_setup::StationSetup;
 use components::dcdu_view::DcduView;
 use components::atc_view::AtcView;
-use openlink_models::{AcarsEndpointAddress, CpdlcEnvelope, CpdlcMetaMessage, OpenLinkMessage, AcarsMessage, SerializedMessagePayload};
+use openlink_models::{AcarsEndpointAddress, AcarsMessage, CpdlcApplicationMessage, CpdlcArgument, CpdlcEnvelope, CpdlcMetaMessage, OpenLinkMessage, SerializedMessagePayload};
 
 fn main() {
     dioxus::launch(App);
@@ -233,6 +233,9 @@ async fn spawn_inbox_listener(
             if let Some((cpdlc, meta, aircraft_address)) = nats_client::extract_cpdlc_meta(env) {
                 handle_incoming_meta(meta, cpdlc, &aircraft_address, tab_id, &mut app_state, &client, &setup).await;
             }
+            if let Some((cpdlc, app, aircraft_address)) = nats_client::extract_cpdlc_application(env) {
+                handle_incoming_application(app, cpdlc, &aircraft_address, tab_id, &mut app_state, &client, &setup).await;
+            }
         }
 
         // Don't store protocol-internal messages in the message list
@@ -326,25 +329,6 @@ async fn handle_incoming_meta(
         // ATC: receive connection response — nothing to do locally,
         // the SessionUpdate will set the authoritative state.
         CpdlcMetaMessage::ConnectionResponse { .. } => {}
-        // Aircraft: receive contact request — auto-logon to the new station
-        CpdlcMetaMessage::ContactRequest { station } => {
-            let is_aircraft = {
-                let state = app_state.read();
-                state.tab_by_id(tab_id)
-                    .map(|t| t.setup.station_type == StationType::Aircraft)
-                    .unwrap_or(false)
-            };
-            if is_aircraft {
-                let addr: AcarsEndpointAddress = setup.acars_address.clone().into();
-                let msg = client.cpdlc_logon_request(
-                    &setup.callsign,
-                    &addr,
-                    &station.to_string(),
-                );
-                let _ = client.send_to_server(msg).await;
-                push_outgoing_message(app_state, tab_id, &format!("LOGON REQUEST → {station}"));
-            }
-        }
         // ATC: receive logon forward — auto-send connection request to the aircraft
         CpdlcMetaMessage::LogonForward { flight, .. } => {
             let is_atc = {
@@ -392,7 +376,70 @@ async fn handle_incoming_meta(
                 }
             }
         }
-        _ => {}
+    }
+}
+
+/// Handle incoming CPDLC application messages used for session flow helpers.
+///
+/// Specifically, aircraft auto-logon on `UM117 CONTACT [unit] [frequency]`.
+async fn handle_incoming_application(
+    app: &CpdlcApplicationMessage,
+    cpdlc: &CpdlcEnvelope,
+    aircraft_address: &AcarsEndpointAddress,
+    tab_id: Uuid,
+    app_state: &mut Signal<AppState>,
+    client: &openlink_sdk::OpenLinkClient,
+    setup: &SetupFields,
+) {
+    let is_aircraft = {
+        let state = app_state.read();
+        state.tab_by_id(tab_id)
+            .map(|t| t.setup.station_type == StationType::Aircraft)
+            .unwrap_or(false)
+    };
+
+    // Auto-send CPDLC logical acknowledgement for incoming application messages.
+    // Do not acknowledge logical acknowledgements themselves to avoid loops.
+    if openlink_sdk::should_auto_send_logical_ack(&app.elements, app.min)
+        && cpdlc.source.to_string() != setup.callsign
+    {
+        let aircraft_callsign = if is_aircraft {
+            setup.callsign.clone()
+        } else {
+            cpdlc.source.to_string()
+        };
+        let ack = client.cpdlc_logical_ack(
+            &setup.callsign,
+            &cpdlc.source.to_string(),
+            &aircraft_callsign,
+            aircraft_address,
+            app.min,
+        );
+        let _ = client.send_to_server(ack).await;
+    }
+
+    if !is_aircraft {
+        return;
+    }
+
+    for element in &app.elements {
+        if element.id != "UM117" {
+            continue;
+        }
+
+        let station = element
+            .args
+            .iter()
+            .find_map(|arg| match arg {
+                CpdlcArgument::UnitName(unit) => Some(unit.clone()),
+                _ => None,
+            })
+            .unwrap_or_else(|| cpdlc.source.to_string());
+
+        let addr: AcarsEndpointAddress = setup.acars_address.clone().into();
+        let msg = client.cpdlc_logon_request(&setup.callsign, &addr, &station);
+        let _ = client.send_to_server(msg).await;
+        push_outgoing_message(app_state, tab_id, &format!("LOGON REQUEST → {station}"));
     }
 }
 

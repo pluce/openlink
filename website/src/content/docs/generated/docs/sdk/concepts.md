@@ -2,7 +2,7 @@
 title: Concepts
 description: Mirrored documentation from docs/sdk/concepts.md
 sidebar:
-  order: 2
+  order: 3
 ---
 
 > Source: docs/sdk/concepts.md (synced automatically)

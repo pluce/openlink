@@ -13,7 +13,7 @@ helpers for constructing them.
 | `network` | Network-level addressing: `NetworkId` (identifies a network such as *demonetwork* or *icao*) and `NetworkAddress` (identifies a station within that network). |
 | `envelope` | `OpenLinkEnvelope` — the standard wrapper for all messages, carrying a UUID, timestamp, routing header and payload. |
 | `acars` | ACARS layer: `AcarsEnvelope`, `AcarsRouting`, endpoint callsigns and addresses. |
-| `cpdlc` | CPDLC messaging: `CpdlcEnvelope`, meta messages (logon, connection, contact, transfer), application messages, `FlightLevel`, `ICAOAirportCode`, `SerializedMessagePayload`. |
+| `cpdlc` | CPDLC messaging: `CpdlcEnvelope`, protocol meta messages (logon, connection, transfer, session update), application messages (including UM160/UM161/UM117/DM89/DM0 flows), `FlightLevel`, `ICAOAirportCode`, `SerializedMessagePayload`. |
 | `station` | Ground-station metadata: `StationId`, `StationStatus`, `MetaMessage`. |
 | `error` | `ModelError` — typed errors returned by `TryFrom` / `FromStr` implementations and builders. |
 | `message_builder` | Fluent builders (`MessageBuilder`, `EnvelopeBuilder`, `CpdlcMessageBuilder`, `StationStatusBuilder`) for constructing messages and envelopes. |
@@ -22,8 +22,8 @@ helpers for constructing them.
 
 - **`OpenLinkEnvelope`** — Top-level message wrapper (`uuid::Uuid` id, `chrono` timestamp, routing, payload, auth token).
 - **`OpenLinkMessage`** — Payload enum: `Acars(AcarsEnvelope)` or `Meta(MetaMessage)`.
-- **`CpdlcMetaMessage`** — Logon, connection, contact, transfer and NDA handshake messages.
-- **`CpdlcMessage`** — Application-level CPDLC messages (e.g. climb-to, request-level-change) using typed `FlightLevel`.
+- **`CpdlcMetaMessage`** — Protocol-only messages (logon/connection, logon-forward, session update).
+- **`CpdlcMessage`** — Application-level CPDLC messages (e.g. climb-to, request-level-change, UM160 NEXT DATA AUTHORITY, UM161 END SERVICE, UM117 CONTACT, DM89 MONITORING) using typed arguments.
 - **`ICAOAirportCode`** — Validated 4-letter ICAO code (strict `TryFrom` / `FromStr`).
 - **`FlightLevel`** — Typed flight level (`u16`), displays as `"FL350"`, parses from `"FL350"` or `"350"`.
 - **`StationStatus`** — Online / Offline with `strum` derives (`Display`, `EnumString`, `EnumIter`).

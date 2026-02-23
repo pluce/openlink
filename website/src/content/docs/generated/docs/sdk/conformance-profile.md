@@ -2,7 +2,7 @@
 title: Conformance Profile
 description: Mirrored documentation from docs/sdk/conformance-profile.md
 sidebar:
-  order: 10
+  order: 16
 ---
 
 > Source: docs/sdk/conformance-profile.md (synced automatically)
@@ -39,6 +39,19 @@ Define acceptance criteria for SDKs used by external integrators.
 - API surface is coherent and documented
 - SDK docs declare compatible catalog version
 
+### 5) Cross-language parity
+
+- Rust and TypeScript SDK runtime rules remain behaviorally aligned
+- Logical acknowledgement and short-response selection use equivalent rules
+- Any intentional divergence is documented in both SDK docs and changelogs
+
+### 6) Fixture conformance
+
+- Runtime vectors are machine-readable expected-behavior cases (`operation` + `input` + expected output)
+- SDKs execute shared runtime vectors from `spec/sdk-conformance/runtime-vectors.v1.json`
+- SDKs execute shared wire examples from `spec/sdk-conformance/wire-examples.v1.json`
+- All vectors/examples pass with exact expected outcomes
+
 ## Recommended test coverage
 
 - valid/invalid message construction,
@@ -55,3 +68,4 @@ Define acceptance criteria for SDKs used by external integrators.
 
 - [High-level API contract](../high-level-api-contract/)
 - [Integration checklist](../integration-checklist/)
+- [Conformance test matrix](../conformance-test-matrix/)
