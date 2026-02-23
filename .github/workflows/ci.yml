@@ -75,6 +75,11 @@ jobs:
             clients/openlink-sdk-ts/package-lock.json
             website/package-lock.json
 
+      - name: Install shared SDK deps (for A320 TS alias)
+        if: ${{ matrix.name == 'a320-mcdu-dcdu' }}
+        working-directory: clients/openlink-sdk-ts
+        run: npm ci
+
       - name: Install dependencies
         working-directory: ${{ matrix.working_dir }}
         run: npm ci
