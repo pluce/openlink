@@ -35,8 +35,8 @@ jobs:
       - name: Compile all Rust crates
         run: cargo check --workspace
 
-      - name: Run Rust tests (workspace)
-        run: cargo test --workspace --exclude openlink-gui
+      - name: Run Rust tests (workspace, no live-NATS integration tests)
+        run: cargo test --workspace --exclude openlink-gui --exclude openlink-server
 
       - name: Verify GUI crate compiles
         run: cargo check -p openlink-gui
