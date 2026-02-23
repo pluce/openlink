@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust workspace (build + tests)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Linux deps (openlink-gui)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Compile all Rust crates
+        run: cargo check --workspace
+
+      - name: Run Rust tests (workspace)
+        run: cargo test --workspace --exclude openlink-gui
+
+      - name: Verify GUI crate compiles
+        run: cargo check -p openlink-gui
+
+  js:
+    name: JS clients / docs (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: a320-mcdu-dcdu
+            working_dir: clients/a320-mcdu-dcdu
+            build_cmd: npm run build
+            test_cmd: ""
+          - name: openlink-sdk-ts
+            working_dir: clients/openlink-sdk-ts
+            build_cmd: ""
+            test_cmd: npm run test:conformance
+          - name: website
+            working_dir: website
+            build_cmd: npm run build
+            test_cmd: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            clients/a320-mcdu-dcdu/package-lock.json
+            clients/openlink-sdk-ts/package-lock.json
+            website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.working_dir }}
+        run: npm ci
+
+      - name: Build
+        if: ${{ matrix.build_cmd != '' }}
+        working-directory: ${{ matrix.working_dir }}
+        run: ${{ matrix.build_cmd }}
+
+      - name: Test
+        if: ${{ matrix.test_cmd != '' }}
+        working-directory: ${{ matrix.working_dir }}
+        run: ${{ matrix.test_cmd }}

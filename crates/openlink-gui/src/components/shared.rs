@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use openlink_models::CpdlcResponseIntent;
 use crate::state::ReceivedMessage;
 use crate::i18n::{use_locale, t};
 
@@ -20,7 +21,14 @@ pub fn StatusBadge(status: String) -> Element {
 
 /// Reusable message list component showing human-readable CPDLC messages
 #[component]
-pub fn MessageList(messages: Vec<ReceivedMessage>) -> Element {
+pub fn MessageList(
+    messages: Vec<ReceivedMessage>,
+    on_respond: Option<EventHandler<(u8, CpdlcResponseIntent)>>,
+    on_respond_compose: Option<EventHandler<(u8, CpdlcResponseIntent)>>,
+    on_suggested_reply: Option<EventHandler<u8>>,
+) -> Element {
+    // Kept for API compatibility with DCDU/ATC views.
+    let _ = (&on_respond, &on_respond_compose, &on_suggested_reply);
     let locale = use_locale();
     let tr = t(*locale.read());
     rsx! {

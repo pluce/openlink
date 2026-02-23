@@ -60,6 +60,7 @@ pub struct T {
     pub icao_placeholder: &'static str,
     pub cancel: &'static str,
     pub commands: &'static str,
+    pub pilot_downlink: &'static str,
     pub no_commands_available: &'static str,
     pub received_messages: &'static str,
 
@@ -72,6 +73,12 @@ pub struct T {
     pub reject: &'static str,
     pub flight_connected: &'static str,
     pub select_flight: &'static str,
+    pub conn_management: &'static str,
+    pub atc_uplink: &'static str,
+    pub contact_station: &'static str,
+    pub transfer_to: &'static str,
+    pub target_station_placeholder: &'static str,
+    pub end_service: &'static str,
 
     // ── Shared ──
     pub no_messages: &'static str,
@@ -106,6 +113,7 @@ pub fn t(locale: Locale) -> T {
             icao_placeholder: "ICAO (ex: LFPG)",
             cancel: "ANNULER",
             commands: "Commandes",
+            pilot_downlink: "PILOT DOWNLINK",
             no_commands_available: "(Aucune commande disponible pour le moment)",
             received_messages: "Messages reçus",
 
@@ -118,6 +126,12 @@ pub fn t(locale: Locale) -> T {
             reject: "✗ Rejeter",
             flight_connected: "Vol connecté",
             select_flight: "Sélectionnez un vol dans la liste",
+            conn_management: "Gestion connexion",
+            atc_uplink: "ATC UPLINK",
+            contact_station: "Contacter station",
+            transfer_to: "Transférer vers",
+            target_station_placeholder: "Station (ex: LFPG)",
+            end_service: "Fin de service",
 
             // Shared
             no_messages: "Aucun message",
@@ -149,6 +163,7 @@ pub fn t(locale: Locale) -> T {
             icao_placeholder: "ICAO (e.g. EGLL)",
             cancel: "CANCEL",
             commands: "Commands",
+            pilot_downlink: "PILOT DOWNLINK",
             no_commands_available: "(No commands available yet)",
             received_messages: "Received messages",
 
@@ -161,6 +176,12 @@ pub fn t(locale: Locale) -> T {
             reject: "✗ Reject",
             flight_connected: "Flight connected",
             select_flight: "Select a flight from the list",
+            conn_management: "Connection mgmt",
+            atc_uplink: "ATC UPLINK",
+            contact_station: "Contact station",
+            transfer_to: "Transfer to",
+            target_station_placeholder: "Station (e.g. EGLL)",
+            end_service: "End service",
 
             // Shared
             no_messages: "No messages",
