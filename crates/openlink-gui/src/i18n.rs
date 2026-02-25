@@ -44,6 +44,10 @@ pub struct T {
     pub recent_stations: &'static str,
     pub station_type: &'static str,
     pub aircraft_dcdu: &'static str,
+    pub aircraft_ui_mode: &'static str,
+    pub aircraft_ui_classic: &'static str,
+    pub aircraft_ui_a320: &'static str,
+    pub a320_client_url: &'static str,
     pub atc: &'static str,
     pub network: &'static str,
     pub network_address_cid: &'static str,
@@ -82,6 +86,8 @@ pub struct T {
 
     // ── Shared ──
     pub no_messages: &'static str,
+    pub open_in_browser: &'static str,
+    pub a320_mode_hint: &'static str,
 }
 
 pub fn t(locale: Locale) -> T {
@@ -97,6 +103,10 @@ pub fn t(locale: Locale) -> T {
             recent_stations: "Stations récentes",
             station_type: "Type de station",
             aircraft_dcdu: " ✈ Avion (DCDU)",
+            aircraft_ui_mode: "Interface avion",
+            aircraft_ui_classic: "DCDU classique (Rust)",
+            aircraft_ui_a320: "A320 complet (client React)",
+            a320_client_url: "URL client A320",
             atc: " 🗼 ATC",
             network: "Réseau",
             network_address_cid: "Adresse réseau (CID)",
@@ -135,6 +145,8 @@ pub fn t(locale: Locale) -> T {
 
             // Shared
             no_messages: "Aucun message",
+            open_in_browser: "Ouvrir dans le navigateur",
+            a320_mode_hint: "Lancez le client A320 puis utilisez-le comme dans la démo web.",
         },
         Locale::En => T {
             // General
@@ -147,6 +159,10 @@ pub fn t(locale: Locale) -> T {
             recent_stations: "Recent stations",
             station_type: "Station type",
             aircraft_dcdu: " ✈ Aircraft (DCDU)",
+            aircraft_ui_mode: "Aircraft interface",
+            aircraft_ui_classic: "Classic DCDU (Rust)",
+            aircraft_ui_a320: "Full A320 (React client)",
+            a320_client_url: "A320 client URL",
             atc: " 🗼 ATC",
             network: "Network",
             network_address_cid: "Network address (CID)",
@@ -185,6 +201,8 @@ pub fn t(locale: Locale) -> T {
 
             // Shared
             no_messages: "No messages",
+            open_in_browser: "Open in browser",
+            a320_mode_hint: "Start the A320 client and use it exactly like the web demo.",
         },
     }
 }

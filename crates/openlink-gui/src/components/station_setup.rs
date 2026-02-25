@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use uuid::Uuid;
 
-use crate::state::{AppState, NatsClients, SavedStation, StationType, TabPhase, SetupFields};
+use crate::state::{AircraftUiMode, AppState, NatsClients, SavedStation, StationType, TabPhase, SetupFields};
 use crate::nats_client;
 use crate::i18n::{use_locale, t};
 
@@ -42,6 +42,8 @@ pub fn StationSetup(
                                     if let Some(tab) = state.tab_mut_by_id(tab_id) {
                                         tab.setup = SetupFields {
                                             station_type: station.station_type.clone(),
+                                            aircraft_ui_mode: station.aircraft_ui_mode.clone(),
+                                            a320_ui_url: station.a320_ui_url.clone(),
                                             network_id: station.network_id.clone(),
                                             network_address: station.network_address.clone(),
                                             callsign: station.callsign.clone(),
@@ -95,6 +97,42 @@ pub fn StationSetup(
                                 },
                             }
                             "{tr.atc}"
+                        }
+                    }
+                }
+
+                if matches!(setup.station_type, StationType::Aircraft) {
+                    div { class: "form-row",
+                        label { "{tr.aircraft_ui_mode}" }
+                        div { class: "radio-group",
+                            label {
+                                input {
+                                    r#type: "radio",
+                                    name: "aircraft_ui_mode_{tab_id}",
+                                    checked: matches!(setup.aircraft_ui_mode, AircraftUiMode::ClassicDcdu),
+                                    oninput: move |_| {
+                                        let mut state = app_state.write();
+                                        if let Some(tab) = state.tab_mut_by_id(tab_id) {
+                                            tab.setup.aircraft_ui_mode = AircraftUiMode::ClassicDcdu;
+                                        }
+                                    },
+                                }
+                                "{tr.aircraft_ui_classic}"
+                            }
+                            label {
+                                input {
+                                    r#type: "radio",
+                                    name: "aircraft_ui_mode_{tab_id}",
+                                    checked: matches!(setup.aircraft_ui_mode, AircraftUiMode::A320),
+                                    oninput: move |_| {
+                                        let mut state = app_state.write();
+                                        if let Some(tab) = state.tab_mut_by_id(tab_id) {
+                                            tab.setup.aircraft_ui_mode = AircraftUiMode::A320;
+                                        }
+                                    },
+                                }
+                                "{tr.aircraft_ui_a320}"
+                            }
                         }
                     }
                 }
@@ -205,6 +243,8 @@ pub fn StationSetup(
                                         // Save station to presets
                                         let saved = SavedStation {
                                             station_type: setup.station_type.clone(),
+                                            aircraft_ui_mode: setup.aircraft_ui_mode.clone(),
+                                            a320_ui_url: setup.a320_ui_url.clone(),
                                             network_id: setup.network_id.clone(),
                                             network_address: setup.network_address.clone(),
                                             callsign: setup.callsign.clone(),

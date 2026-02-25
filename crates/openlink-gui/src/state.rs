@@ -17,8 +17,28 @@ pub enum StationType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum AircraftUiMode {
+    ClassicDcdu,
+    A320,
+}
+
+impl Default for AircraftUiMode {
+    fn default() -> Self {
+        Self::ClassicDcdu
+    }
+}
+
+fn default_a320_ui_url() -> String {
+    "http://localhost:5173".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct SavedStation {
     pub station_type: StationType,
+    #[serde(default)]
+    pub aircraft_ui_mode: AircraftUiMode,
+    #[serde(default = "default_a320_ui_url")]
+    pub a320_ui_url: String,
     pub network_id: String,
     pub network_address: String,
     pub callsign: String,
@@ -143,6 +163,8 @@ impl NatsClients {
 #[derive(Debug, Clone, PartialEq)]
 pub struct SetupFields {
     pub station_type: StationType,
+    pub aircraft_ui_mode: AircraftUiMode,
+    pub a320_ui_url: String,
     pub network_id: String,
     pub network_address: String,
     pub callsign: String,
@@ -153,6 +175,8 @@ impl Default for SetupFields {
     fn default() -> Self {
         Self {
             station_type: StationType::Aircraft,
+            aircraft_ui_mode: AircraftUiMode::ClassicDcdu,
+            a320_ui_url: default_a320_ui_url(),
             network_id: "vatsim".to_string(),
             network_address: String::new(),
             callsign: String::new(),

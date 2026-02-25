@@ -7,10 +7,11 @@ mod i18n;
 use dioxus::prelude::*;
 use std::time::Duration;
 use uuid::Uuid;
-use state::{AppState, NatsClients, StationType, SetupFields};
+use state::{AircraftUiMode, AppState, NatsClients, StationType, SetupFields};
 use components::tab_bar::TabBar;
 use components::station_setup::StationSetup;
 use components::dcdu_view::DcduView;
+use components::a320_view::A320View;
 use components::atc_view::AtcView;
 use openlink_models::{AcarsEndpointAddress, AcarsMessage, CpdlcApplicationMessage, CpdlcArgument, CpdlcEnvelope, CpdlcMetaMessage, OpenLinkMessage, SerializedMessagePayload};
 
@@ -120,13 +121,30 @@ fn App() -> Element {
                         },
                         state::TabPhase::Connected(ref station_type) => {
                             match station_type {
-                                state::StationType::Aircraft => rsx! {
-                                    DcduView {
-                                        tab_id,
-                                        app_state,
-                                        nats_clients,
+                                state::StationType::Aircraft => {
+                                    let aircraft_ui_mode = {
+                                        let s = app_state.read();
+                                        s.tab_by_id(tab_id)
+                                            .map(|t| t.setup.aircraft_ui_mode.clone())
+                                            .unwrap_or(AircraftUiMode::ClassicDcdu)
+                                    };
+                                    match aircraft_ui_mode {
+                                        AircraftUiMode::ClassicDcdu => rsx! {
+                                            DcduView {
+                                                tab_id,
+                                                app_state,
+                                                nats_clients,
+                                            }
+                                        },
+                                        AircraftUiMode::A320 => rsx! {
+                                            A320View {
+                                                tab_id,
+                                                app_state,
+                                                nats_clients,
+                                            }
+                                        },
                                     }
-                                },
+                                }
                                 state::StationType::Atc => rsx! {
                                     AtcView {
                                         tab_id,

@@ -42,7 +42,6 @@ body {
     font-size: 11px;
     font-family: inherit;
     cursor: pointer;
-    letter-spacing: 1px;
 }
 .locale-switcher button:hover {
     background: #30363d;
@@ -802,6 +801,559 @@ body {
 
 .atc-detail .message-payload {
     color: #8db9e8;
+}
+
+/* ================================================== */
+/* ===== Native A320 Dioxus View ===== */
+/* ================================================== */
+
+.a320-native-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 36px);
+    background: #1a1a1d;
+    color: #e0e0e0;
+}
+
+.a320-native-header {
+    padding: 5px 12px;
+    border-bottom: 1px solid #2a2a2a;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+}
+
+.a320-native-title {
+    color: #00ff7f;
+    font-weight: 700;
+}
+
+.a320-native-cockpit {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 8px;
+    min-height: 0;
+    align-items: center;
+    font-family: "B612 Mono", "Fira Code", "Consolas", monospace;
+}
+
+.a320-native-dcdu {
+    width: fit-content;
+    max-width: 96%;
+    border-radius: 14px;
+    padding: 10px;
+    position: relative;
+    border: 2px solid #7a7c82;
+    background: linear-gradient(145deg, #6e7076 0%, #5e6066 40%, #505258 70%, #5a5c62 100%);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.a320-native-mcdu {
+    width: fit-content;
+    max-width: 96%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 14px;
+    padding: 10px;
+    border: 2px solid #333;
+    background: #202025;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+.a320-screw {
+    position: absolute;
+    color: #999;
+    font-size: 14px;
+    opacity: 0.5;
+    line-height: 1;
+}
+
+.a320-screw.tl { top: 5px; left: 8px; }
+.a320-screw.tr { top: 5px; right: 8px; }
+.a320-screw.bl { bottom: 5px; left: 8px; }
+.a320-screw.br { bottom: 5px; right: 8px; }
+
+.a320-native-dcdu-shell {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+}
+
+.a320-native-dcdu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 56px;
+    flex-shrink: 0;
+    padding: 2px 0;
+    justify-content: flex-start;
+}
+
+.a320-dcdu-spacer {
+    flex: 1;
+    min-height: 4px;
+}
+
+.a320-native-dcdu-buttons .a320-dcdu-spacer:first-of-type {
+    flex: 1.25;
+}
+
+.a320-native-dcdu-buttons .a320-dcdu-spacer:last-of-type {
+    flex: 1;
+}
+
+.a320-dcdu-btn {
+    background: linear-gradient(180deg, #6e7076 0%, #52545a 100%);
+    border: 1.5px solid #8a8c92;
+    color: #e0e0e0;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 10px 2px;
+    text-align: center;
+    line-height: 1.2;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12);
+}
+
+.a320-dcdu-btn.action {
+    cursor: pointer;
+}
+
+.a320-dcdu-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.a320-native-dcdu-screen {
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+    width: 26ch;
+    background: #020202;
+    border: 3px solid #1a1a1a;
+    border-radius: 4px;
+    padding: 0.4em 1ch;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 24px rgba(0,255,127,0.08);
+}
+
+.a320-native-blanking {
+    width: 100%;
+    height: 100%;
+    background: #000;
+}
+
+.a320-native-msg-meta {
+    color: #00e1e1;
+    font-size: 15px;
+    margin-bottom: 4px;
+    letter-spacing: 0.7px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 26px;
+}
+
+.a320-native-msg-body,
+.a320-native-chain-out,
+.a320-native-chain-in,
+.a320-native-chain-draft,
+.a320-native-pending {
+    white-space: nowrap;
+    word-break: normal;
+    font-size: 24px;
+    line-height: 1.45;
+    letter-spacing: 0.3px;
+}
+
+.a320-dcdu-body-line {
+    min-height: 34px;
+    display: flex;
+    align-items: center;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: clip;
+}
+
+.a320-native-msg-body.uplink,
+.a320-native-chain-in {
+    color: #ebedef;
+}
+
+.a320-native-msg-body.preview {
+    color: #f032e6;
+}
+
+.a320-native-chain-out {
+    background: #00ff7f;
+    padding: 3px 5px;
+    border-radius: 4px;
+    color: #020202;
+}
+
+.a320-native-chain-draft {
+    color: #050a08;
+    background: #00e1e1;
+    padding: 3px 5px;
+    border-radius: 4px;
+}
+
+.a320-dcdu-btn.action.active {
+    background: #00e1e1;
+    color: #020202;
+    border-color: #00e1e1;
+}
+
+.a320-native-chain-sep {
+    color: #00ff7f88;
+    margin: 4px 0;
+}
+
+.a320-native-dcdu-sep {
+    height: 1px;
+    background: #d8d8d888;
+    margin: 8px 0 4px;
+}
+
+.a320-dcdu-line6-status {
+    min-height: 26px;
+    color: #00e1e1;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.5px;
+}
+
+.a320-dcdu-line7-actions {
+    min-height: 32px;
+    display: grid;
+    grid-template-columns: 7ch 12ch 7ch;
+    align-items: center;
+    border-top: 1px solid rgba(224, 224, 224, 0.45);
+    padding-top: 2px;
+}
+
+.a320-native-lower {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.a320-native-lower-row {
+    display: grid;
+    grid-template-columns: 7ch 12ch 7ch;
+    align-items: center;
+    min-height: 30px;
+}
+
+.a320-native-lbl {
+    color: #00e1e1;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.a320-native-lbl.left {
+    text-align: left;
+}
+
+.a320-native-lbl.right {
+    text-align: right;
+}
+
+.a320-native-center {
+    text-align: center;
+    color: #e0e0e0;
+    font-size: 15px;
+    border-left: 1px solid rgba(224, 224, 224, 0.5);
+    border-right: 1px solid rgba(224, 224, 224, 0.5);
+    min-height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.a320-native-empty {
+    color: #555;
+    font-style: italic;
+}
+
+.a320-native-annunciators {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 3px 44px;
+    margin-bottom: 5px;
+}
+
+.a320-ann {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 3px;
+    color: #2a2a2a;
+    background: #141414;
+    border: 1px solid #2a2a2a;
+    min-width: 42px;
+    text-align: center;
+}
+
+.a320-ann.on {
+    color: #ff9800;
+    border-color: #553300;
+    background: #1a1000;
+    text-shadow: 0 0 6px rgba(255,152,0,0.4);
+}
+
+.a320-native-mcdu-shell {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    width: fit-content;
+}
+
+.a320-native-lsk-col {
+    display: grid;
+    grid-template-rows: repeat(6, 42px);
+    align-content: start;
+    width: 18px;
+    padding: 38px 0 0;
+}
+
+.a320-native-lsk {
+    width: 16px;
+    height: 4px;
+    background: #777;
+    border: none;
+    border-radius: 2px;
+    justify-self: center;
+    align-self: center;
+    opacity: 0.9;
+}
+
+.a320-native-mcdu-screen {
+    background: #000;
+    border: 3px solid #111;
+    border-radius: 4px;
+    padding: 8px;
+    width: 30ch;
+    min-height: 340px;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 30px rgba(0,30,15,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.a320-mcdu-grid14 {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    flex: 1;
+}
+
+.a320-mcdu-title {
+    color: #00ff7f;
+    font-size: 21px;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.a320-mcdu-label-row {
+    min-height: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.a320-mcdu-data-row {
+    min-height: 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.a320-mcdu-label {
+    color: #e0e0e0;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.a320-mcdu-label.left {
+    text-align: left;
+}
+
+.a320-mcdu-label.right {
+    text-align: right;
+}
+
+.a320-mcdu-value {
+    font-size: 20px;
+    letter-spacing: 0.7px;
+}
+
+.a320-mcdu-value.left {
+    text-align: left;
+}
+
+.a320-mcdu-value.right {
+    text-align: right;
+    margin-left: auto;
+}
+
+.a320-mcdu-value.green {
+    color: #00ff7f;
+}
+
+.a320-mcdu-value.cyan {
+    color: #00e0ff;
+}
+
+.a320-mcdu-lsk-text {
+    background: transparent;
+    border: none;
+    color: #00e0ff;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.a320-mcdu-lsk-text.left {
+    text-align: left;
+}
+
+.a320-mcdu-lsk-text.right {
+    text-align: right;
+    margin-left: auto;
+}
+
+.a320-mcdu-lsk-text.action {
+    color: #00ff7f;
+}
+
+.a320-mcdu-lsk-text:disabled {
+    color: #3f5e50;
+    cursor: default;
+}
+
+.a320-native-row-title {
+    color: #00ff7f;
+    margin-bottom: 6px;
+    font-size: 18px;
+    letter-spacing: 1px;
+    text-align: center;
+}
+
+.a320-native-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 12px;
+}
+
+.a320-native-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+}
+
+.a320-native-field {
+    color: #00e0ff;
+    font-size: 13px;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+}
+
+.a320-native-input {
+    width: 100%;
+    background: #000;
+    color: #00ff7f;
+    border: 1px solid #2a3a33;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-family: inherit;
+    margin-bottom: 8px;
+    font-size: 20px;
+    letter-spacing: 1px;
+}
+
+.a320-native-scratch {
+    margin-top: auto;
+    border-top: 1px solid #1f2e29;
+    padding-top: 6px;
+}
+
+.a320-native-cmd-val {
+    color: #00ff7f;
+}
+
+.a320-btn {
+    background: #30343b;
+    border: 1px solid #4f5560;
+    color: #e0e0e0;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.a320-btn:hover:not(:disabled) {
+    background: #3a3f47;
+}
+
+.a320-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.a320-btn.action {
+    color: #00e0ff;
+    border-color: #00e0ff55;
+}
+
+.a320-btn.cmd {
+    text-align: left;
+    border-radius: 6px;
+}
+
+/* MCDU screen controls: flatter line-style like real text rows */
+.a320-native-mcdu-screen .a320-btn {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: #00e0ff;
+    text-align: left;
+    padding: 2px 0;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+}
+
+.a320-native-mcdu-screen .a320-btn.action {
+    color: #00ff7f;
+}
+
+.a320-native-mcdu-screen .a320-btn:hover:not(:disabled) {
+    background: transparent;
+    color: #e0e0e0;
+}
+
+.a320-native-mcdu-screen .a320-btn:disabled {
+    color: #4a6a58;
+}
+
+.a320-native-pending {
+    margin-top: 4px;
+    color: #00ff7f;
+    font-size: 14px;
+    opacity: 0.75;
 }
 
 /* ===== Scrollbar Styling ===== */
