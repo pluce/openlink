@@ -49,7 +49,7 @@ export type CpdlcMessageType =
   | { type: "Meta"; data: CpdlcMetaMessage };
 
 export interface CpdlcApplicationMessage {
-  /** Message Identification Number (1—63), assigned by sender/server. */
+  /** Message Identification Number (1—63), assigned by sender SDK/client. */
   min: number;
   /** Message Reference Number (MIN referenced by this response). */
   mrn: number | null;
@@ -147,6 +147,7 @@ export interface DcduMessage {
   status: DcduMessageStatus;
   responseIntents: ResponseIntent[];
   respondedWith?: string;
+  acknowledgedByAtc?: boolean;
   mrn?: number | null;
   min?: number | null;
   elements?: MessageElement[];

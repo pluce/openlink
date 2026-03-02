@@ -33,6 +33,7 @@ A compliant TypeScript SDK SHOULD stay as close as possible to Rust SDK semantic
 | `is_logical_ack_element_id()` | `isLogicalAckElementId()` |
 | `message_contains_logical_ack()` | `messageContainsLogicalAck()` |
 | `should_auto_send_logical_ack()` | `shouldAutoSendLogicalAck()` |
+| `logical_ack_matches_outgoing()` | `logicalAckMatchesOutgoing()` |
 | `closes_dialogue_response_elements()` | `closesDialogueResponseElements()` |
 | `response_attr_to_intents()` | `responseAttrToIntents()` |
 | `choose_short_response_intents()` | `chooseShortResponseIntents()` |
@@ -107,7 +108,9 @@ A compliant SDK MUST enforce:
 
 - no logical-ack loops (`DM100`/`UM227` are never auto-acked)
 - `MRN` references use message `MIN` of received message
-- message MIN domain awareness (`1..63`) even when sender uses placeholder `min=0`
+- sender-owned `MIN` sequencing in the operational domain `1..63`
+- per-session `MIN` progression and wrap (`63 -> 1`) aligned with Rust SDK behavior
+- reset of sender/receiver session `MIN` sequencing on setup transitions (logon/connection setup flows)
 
 ## 8. Recommended package layout
 

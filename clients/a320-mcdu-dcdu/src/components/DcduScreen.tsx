@@ -709,7 +709,9 @@ function LowerZone({
 
   // Default lower zone when no responses to show
   const lowerStatus =
-    message?.status === "responded"
+    message?.isOutgoing && message?.acknowledgedByAtc
+      ? "RECEIVED BY ATC"
+      : message?.status === "responded"
       ? "SENT"
       : message?.status === "sent"
       ? "SENT"

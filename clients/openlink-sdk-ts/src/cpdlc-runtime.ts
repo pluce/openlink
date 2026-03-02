@@ -39,6 +39,18 @@ export function shouldAutoSendLogicalAck(elements: MessageElement[], min: number
   return min > 0 && !messageContainsLogicalAck(elements);
 }
 
+export function logicalAckMatchesOutgoing(
+  outgoingMin: number,
+  incomingElements: MessageElement[],
+  incomingMrn: number | null | undefined
+): boolean {
+  return (
+    outgoingMin > 0 &&
+    incomingMrn === outgoingMin &&
+    messageContainsLogicalAck(incomingElements)
+  );
+}
+
 export function logicalAckDownlinkId(): string {
   return LOGICAL_ACK_DOWNLINK_ID;
 }
@@ -120,6 +132,7 @@ export function chooseShortResponseIntents(
 export const is_logical_ack_element_id = isLogicalAckElementId;
 export const message_contains_logical_ack = messageContainsLogicalAck;
 export const should_auto_send_logical_ack = shouldAutoSendLogicalAck;
+export const logical_ack_matches_outgoing = logicalAckMatchesOutgoing;
 export const closes_dialogue_response_elements = closesDialogueResponseElements;
 export const response_attr_to_intents = responseAttrToIntents;
 export const choose_short_response_intents = chooseShortResponseIntents;

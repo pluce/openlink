@@ -11,6 +11,7 @@ This package centralizes protocol/client-runtime logic that should not be reimpl
 - Catalog-based rendering helpers
 - Short-response selection logic (W/U, A/N, R, Y, N)
 - Logical acknowledgement helpers (`DM100` / `UM227`)
+- Sender-owned CPDLC MIN sequencing (`1..63`, per sender/receiver session)
 - Raw NATS WebSocket client integration
 
 The package aims to stay behaviorally aligned with the Rust SDK for runtime protocol rules.

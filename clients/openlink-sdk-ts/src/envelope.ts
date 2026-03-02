@@ -8,6 +8,25 @@ import type {
   OpenLinkMessage,
 } from "./types";
 
+const minSequences = new Map<string, number>();
+
+function sessionKey(sender: string, receiver: string): string {
+  return `${sender}>${receiver}`;
+}
+
+function nextMinForSession(sender: string, receiver: string): number {
+  const key = sessionKey(sender, receiver);
+  const current = minSequences.get(key) ?? 1;
+  const normalized = current > 0 && current <= 63 ? current : 1;
+  const next = normalized >= 63 ? 1 : normalized + 1;
+  minSequences.set(key, next);
+  return normalized;
+}
+
+function resetMinForSession(sender: string, receiver: string): void {
+  minSequences.set(sessionKey(sender, receiver), 1);
+}
+
 export function buildEnvelope(
   networkId: string,
   networkAddress: string,
@@ -94,6 +113,7 @@ export function buildLogonRequest(
   origin = "ZZZZ",
   destination = "ZZZZ"
 ): OpenLinkMessage {
+  resetMinForSession(aircraftCallsign, targetStation);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, aircraftCallsign, targetStation, {
     type: "Meta",
     data: {
@@ -113,6 +133,9 @@ export function buildLogonResponse(
   acarsAddress: string,
   accepted: boolean
 ): OpenLinkMessage {
+  if (accepted) {
+    resetMinForSession(atcCallsign, aircraftCallsign);
+  }
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, atcCallsign, aircraftCallsign, {
     type: "Meta",
     data: {
@@ -127,6 +150,7 @@ export function buildConnectionRequest(
   aircraftCallsign: string,
   acarsAddress: string
 ): OpenLinkMessage {
+  resetMinForSession(atcCallsign, aircraftCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, atcCallsign, aircraftCallsign, {
     type: "Meta",
     data: {
@@ -143,10 +167,11 @@ export function buildApplicationResponse(
   downlinkId: string,
   mrn: number | null
 ): OpenLinkMessage {
+  const min = nextMinForSession(aircraftCallsign, atcStation);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, aircraftCallsign, atcStation, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn,
       elements: [{ id: downlinkId, args: [] }],
       timestamp: new Date().toISOString(),
@@ -161,10 +186,11 @@ export function buildApplicationDownlink(
   elements: { id: string; args: { type: string; value: string | number }[] }[],
   mrn: number | null = null
 ): OpenLinkMessage {
+  const min = nextMinForSession(aircraftCallsign, atcStation);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, aircraftCallsign, atcStation, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn,
       elements,
       timestamp: new Date().toISOString(),
@@ -178,10 +204,11 @@ export function buildLogicalAck(
   atcStation: string,
   referencedMin: number
 ): OpenLinkMessage {
+  const min = nextMinForSession(aircraftCallsign, atcStation);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, aircraftCallsign, atcStation, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn: referencedMin,
       elements: [{ id: logicalAckDownlinkId(), args: [] }],
       timestamp: new Date().toISOString(),
@@ -197,10 +224,11 @@ export function buildLogicalAckForSender(
   referencedMin: number,
   isAircraftSender: boolean
 ): OpenLinkMessage {
+  const min = nextMinForSession(senderCallsign, receiverCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, senderCallsign, receiverCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn: referencedMin,
       elements: [{ id: logicalAckElementIdForSender(isAircraftSender), args: [] }],
       timestamp: new Date().toISOString(),
@@ -217,10 +245,11 @@ export function buildNextDataAuthority(
   acarsAddress: string,
   ndaCallsign: string
 ): OpenLinkMessage {
+  const min = nextMinForSession(atcCallsign, aircraftCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, atcCallsign, aircraftCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn: null,
       elements: [
         {
@@ -240,10 +269,11 @@ export function buildContactRequest(
   nextStation: string,
   frequency = "UNKNOWN"
 ): OpenLinkMessage {
+  const min = nextMinForSession(atcCallsign, aircraftCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, atcCallsign, aircraftCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn: null,
       elements: [
         {
@@ -264,10 +294,11 @@ export function buildEndService(
   aircraftCallsign: string,
   acarsAddress: string
 ): OpenLinkMessage {
+  const min = nextMinForSession(atcCallsign, aircraftCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, atcCallsign, aircraftCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn: null,
       elements: [{ id: "UM161", args: [] }],
       timestamp: new Date().toISOString(),
@@ -304,10 +335,11 @@ export function buildStationApplication(
   elements: { id: string; args: { type: string; value: string | number }[] }[],
   mrn: number | null = null
 ): OpenLinkMessage {
+  const min = nextMinForSession(stationCallsign, aircraftCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, stationCallsign, aircraftCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn,
       elements,
       timestamp: new Date().toISOString(),
@@ -322,10 +354,11 @@ export function buildAircraftApplication(
   elements: { id: string; args: { type: string; value: string | number }[] }[],
   mrn: number | null = null
 ): OpenLinkMessage {
+  const min = nextMinForSession(aircraftCallsign, stationCallsign);
   return buildCpdlcMessage(aircraftCallsign, acarsAddress, aircraftCallsign, stationCallsign, {
     type: "Application",
     data: {
-      min: 0,
+      min,
       mrn,
       elements,
       timestamp: new Date().toISOString(),

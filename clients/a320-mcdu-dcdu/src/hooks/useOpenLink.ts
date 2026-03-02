@@ -32,7 +32,7 @@ import {
   textPartsToString,
   getResponseIntents,
 } from "../lib/catalog";
-import { shouldAutoSendLogicalAck } from "@openlink/sdk-ts";
+import { messageContainsLogicalAck, shouldAutoSendLogicalAck } from "@openlink/sdk-ts";
 import type {
   ConnectionSettings,
   DcduMessage,
@@ -142,6 +142,22 @@ export function useOpenLink(): UseOpenLinkReturn {
       } else if (cpdlcMsg.type === "Application") {
         // Parse elements into rich TextParts using the CPDLC catalog
         const elements = cpdlcMsg.data.elements;
+        const incomingMrn = cpdlcMsg.data.mrn;
+
+        // Do not display logical acknowledgements as standalone DCDU messages.
+        // Instead, mark the referenced outgoing message as received by ATC.
+        if (messageContainsLogicalAck(elements)) {
+          if (incomingMrn != null) {
+            setDcduMessages((prev) =>
+              prev.map((m) =>
+                m.isOutgoing && m.min != null && m.min === incomingMrn
+                  ? { ...m, acknowledgedByAtc: true }
+                  : m
+              )
+            );
+          }
+          return;
+        }
 
         // Auto-send CPDLC logical acknowledgement based on shared SDK runtime rules.
         if (shouldAutoSendLogicalAck(elements, cpdlcMsg.data.min)) {
@@ -186,7 +202,6 @@ export function useOpenLink(): UseOpenLinkReturn {
         const textParts = elementsToTextParts(elements);
         const plainText = textPartsToString(textParts);
         const responseIntents = getResponseIntents(elements);
-        const incomingMrn = cpdlcMsg.data.mrn;
 
         const msg: DcduMessage = {
           id: uuidv4(),
@@ -204,42 +219,15 @@ export function useOpenLink(): UseOpenLinkReturn {
         setDcduMessages((prev) => {
           let updated = [...prev];
 
-          // If this incoming message references a MRN (response to something),
-          // try to link it into an existing dialog chain.
+          // If this incoming message references an MRN (response to something),
+          // link it into an existing dialog chain using known local MIN values.
           if (incomingMrn != null) {
-            // 1. Direct match: do we have an outgoing message whose min == incomingMrn?
+            // Direct match: do we have an outgoing message whose min == incomingMrn?
             let targetOutgoing = updated.find(
               (m) => m.isOutgoing && m.min != null && m.min === incomingMrn
             );
 
-            // 2. Heuristic: the server assigns MINs to our downlinks but never
-            //    tells us. Find the most recent outgoing "sent" message that
-            //    has a mrn (meaning it was a response in a dialog) and whose
-            //    server-assigned MIN we don't know yet (min is undefined).
-            if (!targetOutgoing) {
-              targetOutgoing = [...updated]
-                .reverse()
-                .find(
-                  (m) =>
-                    m.isOutgoing &&
-                    m.status === "sent" &&
-                    m.mrn != null &&
-                    (m.min == null || m.min === 0)
-                );
-              // Now we know its server-assigned MIN — store it
-              if (targetOutgoing) {
-                updated = updated.map((m) =>
-                  m.id === targetOutgoing!.id
-                    ? { ...m, min: incomingMrn }
-                    : m
-                );
-                console.log(
-                  `[A320] Resolved outgoing MIN: ${targetOutgoing.text} → MIN=${incomingMrn}`
-                );
-              }
-            }
-
-            // 3. Walk the chain back to the root uplink:
+            // Walk the chain back to the root uplink:
             //    incoming (mrn=Y) → our outgoing (min=Y, mrn=X) → original uplink (min=X)
             if (targetOutgoing && targetOutgoing.mrn != null) {
               const rootUplinkMin = targetOutgoing.mrn;
@@ -648,6 +636,10 @@ export function useOpenLink(): UseOpenLinkReturn {
         draftMsg.elements,
         draftMsg.mrn ?? null
       );
+      const outgoingMin =
+        payload.type === "Acars" && payload.data.message.data.message.type === "Application"
+          ? payload.data.message.data.message.data.min
+          : null;
       const env = buildEnvelope(
         s.networkId,
         client.networkAddress,
@@ -660,7 +652,9 @@ export function useOpenLink(): UseOpenLinkReturn {
         console.log(`[A320] Draft sent: ${draftMsg.text}`);
         setDcduMessages((prev) =>
           prev.map((m) =>
-            m.id === messageId ? { ...m, status: "sent" as const } : m
+            m.id === messageId
+              ? { ...m, status: "sent" as const, min: outgoingMin }
+              : m
           )
         );
       } catch (err) {

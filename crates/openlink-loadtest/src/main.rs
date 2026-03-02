@@ -5,8 +5,9 @@ use anyhow::{Result, anyhow};
 use clap::{Parser, ValueEnum};
 use futures::StreamExt;
 use openlink_models::{
-    AcarsEndpointAddress, AcarsEndpointCallsign, AcarsMessage, CpdlcArgument, MessageBuilder,
-    MessageElement, MetaMessage, NetworkAddress, NetworkId, OpenLinkEnvelope, OpenLinkMessage,
+    AcarsEndpointAddress, AcarsEndpointCallsign, AcarsMessage, CpdlcArgument, CpdlcMessageType,
+    MessageBuilder, MessageElement, MetaMessage, NetworkAddress, NetworkId, OpenLinkEnvelope,
+    OpenLinkMessage,
     StationId, StationStatus,
 };
 use openlink_sdk::{NatsSubjects, OpenLinkClient};
@@ -162,6 +163,13 @@ async fn main() -> Result<()> {
         pairs.len()
     );
 
+    // Current server requires an established CPDLC session for application traffic.
+    // Loadtest now performs an explicit logon/connection setup per pair.
+    for pair in &pairs {
+        establish_cpdlc_session(pair).await?;
+    }
+    println!("CPDLC sessions established for {} pairs", pairs.len());
+
     if !args.skip_preflight {
         if let Some(first_pair) = pairs.first().cloned() {
             preflight_routing(&first_pair, &network, args.preflight_timeout_seconds).await?;
@@ -242,6 +250,48 @@ async fn register_online(network: &NetworkId, endpoint: &Endpoint) -> Result<()>
     Ok(())
 }
 
+async fn establish_cpdlc_session(pair: &Pair) -> Result<()> {
+    // 1) Aircraft -> ATC logon request
+    let logon_req = pair.pilot.client.cpdlc_logon_request(
+        pair.pilot.callsign.as_str(),
+        &pair.pilot.address,
+        pair.atc.callsign.as_str(),
+    );
+    pair.pilot.client.send_to_server(logon_req).await?;
+    tokio::time::sleep(Duration::from_millis(5)).await;
+
+    // 2) ATC -> Aircraft logon response (accepted)
+    let logon_resp = pair.atc.client.cpdlc_logon_response(
+        pair.atc.callsign.as_str(),
+        pair.pilot.callsign.as_str(),
+        &pair.pilot.address,
+        true,
+    );
+    pair.atc.client.send_to_server(logon_resp).await?;
+    tokio::time::sleep(Duration::from_millis(5)).await;
+
+    // 3) ATC -> Aircraft connection request
+    let conn_req = pair.atc.client.cpdlc_connection_request(
+        pair.atc.callsign.as_str(),
+        pair.pilot.callsign.as_str(),
+        &pair.pilot.address,
+    );
+    pair.atc.client.send_to_server(conn_req).await?;
+    tokio::time::sleep(Duration::from_millis(5)).await;
+
+    // 4) Aircraft -> ATC connection response (accepted)
+    let conn_resp = pair.pilot.client.cpdlc_connection_response(
+        pair.pilot.callsign.as_str(),
+        &pair.pilot.address,
+        pair.atc.callsign.as_str(),
+        true,
+    );
+    pair.pilot.client.send_to_server(conn_resp).await?;
+    tokio::time::sleep(Duration::from_millis(5)).await;
+
+    Ok(())
+}
+
 fn now_nanos() -> u128 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -291,51 +341,48 @@ async fn run_sender(
         }
 
         let msg = match scenario {
-            Scenario::OneWay | Scenario::Echo => MessageBuilder::cpdlc(
-                pair.pilot.callsign.to_string(),
-                pair.pilot.address.to_string(),
-            )
-            .from(pair.atc.callsign.to_string())
-            .to(pair.pilot.callsign.to_string())
-            .climb_to(openlink_models::FlightLevel::new(350))
-            .build(),
-            Scenario::Mixed => {
-                match seq % 3 {
-                    0 => MessageBuilder::cpdlc(
-                        pair.pilot.callsign.to_string(),
-                        pair.pilot.address.to_string(),
-                    )
-                    .from(pair.atc.callsign.to_string())
-                    .to(pair.pilot.callsign.to_string())
-                    .application_message(vec![MessageElement::new(
+            Scenario::OneWay | Scenario::Echo => pair.atc.client.cpdlc_station_application(
+                pair.atc.callsign.as_str(),
+                pair.pilot.callsign.as_str(),
+                &pair.pilot.address,
+                vec![MessageElement::new(
+                    "UM20",
+                    vec![CpdlcArgument::Level(openlink_models::FlightLevel::new(350))],
+                )],
+                None,
+            ),
+            Scenario::Mixed => match seq % 3 {
+                0 => pair.atc.client.cpdlc_station_application(
+                    pair.atc.callsign.as_str(),
+                    pair.pilot.callsign.as_str(),
+                    &pair.pilot.address,
+                    vec![MessageElement::new(
                         "UM20",
                         vec![CpdlcArgument::Level(openlink_models::FlightLevel::new(350))],
-                    )])
-                    .build(),
-                    1 => MessageBuilder::cpdlc(
-                        pair.pilot.callsign.to_string(),
-                        pair.pilot.address.to_string(),
-                    )
-                    .from(pair.atc.callsign.to_string())
-                    .to(pair.pilot.callsign.to_string())
-                    .application_message(vec![MessageElement::new(
+                    )],
+                    None,
+                ),
+                1 => pair.atc.client.cpdlc_station_application(
+                    pair.atc.callsign.as_str(),
+                    pair.pilot.callsign.as_str(),
+                    &pair.pilot.address,
+                    vec![MessageElement::new(
                         "UM106",
                         vec![CpdlcArgument::Speed("M0.78".to_string())],
-                    )])
-                    .build(),
-                    _ => MessageBuilder::cpdlc(
-                        pair.pilot.callsign.to_string(),
-                        pair.pilot.address.to_string(),
-                    )
-                    .from(pair.atc.callsign.to_string())
-                    .to(pair.pilot.callsign.to_string())
-                    .application_message(vec![MessageElement::new(
+                    )],
+                    None,
+                ),
+                _ => pair.atc.client.cpdlc_station_application(
+                    pair.atc.callsign.as_str(),
+                    pair.pilot.callsign.as_str(),
+                    &pair.pilot.address,
+                    vec![MessageElement::new(
                         "UM169",
                         vec![CpdlcArgument::FreeText("LOADTEST PAYLOAD".to_string())],
-                    )])
-                    .build(),
-                }
-            }
+                    )],
+                    None,
+                ),
+            },
         };
 
         let envelope = MessageBuilder::envelope(msg)
@@ -394,16 +441,16 @@ async fn run_pilot_receiver(
 
         if scenario == Scenario::Echo
             && let OpenLinkMessage::Acars(acars) = envelope.payload
-            && matches!(acars.message, AcarsMessage::CPDLC(_))
+            && let AcarsMessage::CPDLC(cpdlc) = acars.message
+            && let CpdlcMessageType::Application(app) = cpdlc.message
         {
-            let response = MessageBuilder::cpdlc(
-                pair.pilot.callsign.to_string(),
-                pair.pilot.address.to_string(),
-            )
-            .from(pair.pilot.callsign.to_string())
-            .to(pair.atc.callsign.to_string())
-            .application_message(vec![MessageElement::new("DM0", vec![])])
-            .build();
+            let response = pair.pilot.client.cpdlc_aircraft_application(
+                pair.pilot.callsign.as_str(),
+                &pair.pilot.address,
+                pair.atc.callsign.as_str(),
+                vec![MessageElement::new("DM0", vec![])],
+                Some(app.min),
+            );
             let _ = pair.pilot.client.send_to_server(response).await;
         }
     }
@@ -440,14 +487,16 @@ async fn preflight_routing(pair: &Pair, network: &NetworkId, timeout_seconds: u6
     let corr = build_corr("preflight", 0);
     let mut sub = pair.pilot.client.subscribe_inbox().await?;
 
-    let msg = MessageBuilder::cpdlc(
-        pair.pilot.callsign.to_string(),
-        pair.pilot.address.to_string(),
-    )
-    .from(pair.atc.callsign.to_string())
-    .to(pair.pilot.callsign.to_string())
-    .climb_to(openlink_models::FlightLevel::new(350))
-    .build();
+    let msg = pair.atc.client.cpdlc_station_application(
+        pair.atc.callsign.as_str(),
+        pair.pilot.callsign.as_str(),
+        &pair.pilot.address,
+        vec![MessageElement::new(
+            "UM20",
+            vec![CpdlcArgument::Level(openlink_models::FlightLevel::new(350))],
+        )],
+        None,
+    );
 
     let envelope = MessageBuilder::envelope(msg)
         .source_address(network.as_str(), pair.atc.cid.clone())
