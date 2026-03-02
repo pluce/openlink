@@ -128,7 +128,11 @@ pub fn DcduView(
 
     // Derive connection display state from the authoritative session view.
     let conn_state = if let Some(ref session) = tab.session {
-        match &session.active_connection {
+        let conn = session
+            .active_connection
+            .as_ref()
+            .or(session.inactive_connection.as_ref());
+        match conn {
             Some(conn) => match conn.phase {
                 CpdlcConnectionPhase::LogonPending | CpdlcConnectionPhase::LoggedOn => {
                     DcduConnectionState::Pending(conn.peer.to_string())
@@ -176,9 +180,15 @@ pub fn DcduView(
         .collect();
 
     // Find connected station callsign from session
-    let station_callsign = tab.session.as_ref()
-        .and_then(|s| s.active_connection.as_ref())
-        .map(|c| c.peer.clone());
+    let station_callsign = tab
+        .session
+        .as_ref()
+        .and_then(|s| {
+            s.active_connection
+                .as_ref()
+                .map(|c| c.peer.clone())
+                .or_else(|| s.inactive_connection.as_ref().map(|c| c.peer.clone()))
+        });
     drop(state);
 
     rsx! {
@@ -396,7 +406,14 @@ pub fn DcduView(
                                                                             .map(render_element)
                                                                             .collect::<Vec<_>>()
                                                                             .join(" / ");
-                                                                        crate::push_outgoing_message(&mut app_state.clone(), tab_id, &text);
+                                                                        crate::push_outgoing_message_to_with_min_and_mrn(
+                                                                            &mut app_state.clone(),
+                                                                            tab_id,
+                                                                            &text,
+                                                                            None,
+                                                                            None,
+                                                                            compose_mrn,
+                                                                        );
                                                                         mark_dialogue_responded(app_state.clone(), tab_id, compose_mrn, &elements);
                                                                         let mut state = app_state.write();
                                                                         if let Some(tab) = state.tab_mut_by_id(tab_id) {
@@ -543,7 +560,14 @@ pub fn DcduView(
                                                                                             .map(render_element)
                                                                                             .collect::<Vec<_>>()
                                                                                             .join(" / ");
-                                                                                        crate::push_outgoing_message(&mut app_state.clone(), tab_id, &text);
+                                                                                        crate::push_outgoing_message_to_with_min_and_mrn(
+                                                                                            &mut app_state.clone(),
+                                                                                            tab_id,
+                                                                                            &text,
+                                                                                            None,
+                                                                                            None,
+                                                                                            mrn,
+                                                                                        );
                                                                                         mark_dialogue_responded(app_state.clone(), tab_id, mrn, &elements);
                                                                                         let mut state = app_state.write();
                                                                                         if let Some(tab) = state.tab_mut_by_id(tab_id) {
@@ -662,7 +686,14 @@ pub fn DcduView(
                                                                                 .map(render_element)
                                                                                 .collect::<Vec<_>>()
                                                                                 .join(" / ");
-                                                                            crate::push_outgoing_message(&mut app_state.clone(), tab_id, &text);
+                                                                            crate::push_outgoing_message_to_with_min_and_mrn(
+                                                                                &mut app_state.clone(),
+                                                                                tab_id,
+                                                                                &text,
+                                                                                None,
+                                                                                None,
+                                                                                mrn,
+                                                                            );
                                                                             mark_dialogue_responded(app_state.clone(), tab_id, mrn, &elements);
                                                                             let mut state = app_state.write();
                                                                             if let Some(tab) = state.tab_mut_by_id(tab_id) {
@@ -783,7 +814,14 @@ pub fn DcduView(
                                         }
                                     });
                                 }
-                                crate::push_outgoing_message(&mut app_state.clone(), tab_id, intent.label());
+                                crate::push_outgoing_message_to_with_min_and_mrn(
+                                    &mut app_state.clone(),
+                                    tab_id,
+                                    intent.label(),
+                                    None,
+                                    None,
+                                    Some(min),
+                                );
                                 // Close the dialogue: hide response buttons on the original message
                                 if closes_dialogue {
                                     let mut state = app_state.write();

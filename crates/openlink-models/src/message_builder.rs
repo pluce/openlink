@@ -128,10 +128,15 @@ impl CpdlcMessageBuilder {
     }
 
     /// Contact request — ATC sends standard `UM117` (CONTACT [unit] [frequency]).
-    pub fn contact_request(mut self, station: impl Into<String>) -> Self {
+    pub fn contact_request(self, station: impl Into<String>) -> Self {
+        self.contact_request_with_min(station, 0)
+    }
+
+    /// Contact request with explicit MIN.
+    pub fn contact_request_with_min(mut self, station: impl Into<String>, min: u8) -> Self {
         let station: String = station.into();
         self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
-            min: 0,
+            min,
             mrn: None,
             elements: vec![MessageElement::new(
                 "UM117",
@@ -146,10 +151,15 @@ impl CpdlcMessageBuilder {
     }
 
     /// Contact response as short downlink (`DM0` WILCO or `DM1` UNABLE).
-    pub fn contact_response(mut self, accepted: bool) -> Self {
+    pub fn contact_response(self, accepted: bool) -> Self {
+        self.contact_response_with_min(accepted, 0)
+    }
+
+    /// Contact response with explicit MIN.
+    pub fn contact_response_with_min(mut self, accepted: bool, min: u8) -> Self {
         let id = if accepted { "DM0" } else { "DM1" };
         self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
-            min: 0,
+            min,
             mrn: None,
             elements: vec![MessageElement::new(id, vec![])],
             timestamp: Utc::now(),
@@ -158,9 +168,14 @@ impl CpdlcMessageBuilder {
     }
 
     /// Contact complete as standard `DM89` (MONITORING [unit] [frequency]).
-    pub fn contact_complete(mut self) -> Self {
+    pub fn contact_complete(self) -> Self {
+        self.contact_complete_with_min(0)
+    }
+
+    /// Contact complete with explicit MIN.
+    pub fn contact_complete_with_min(mut self, min: u8) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
-            min: 0,
+            min,
             mrn: None,
             elements: vec![MessageElement::new(
                 "DM89",
@@ -195,12 +210,22 @@ impl CpdlcMessageBuilder {
 
     /// Set the Next Data Authority as standard `UM160`.
     pub fn next_data_authority(
-        mut self,
+        self,
         nda_callsign: impl Into<String>,
         _nda_address: impl Into<String>,
     ) -> Self {
+        self.next_data_authority_with_min(nda_callsign, _nda_address, 0)
+    }
+
+    /// Set the Next Data Authority as standard `UM160` with explicit MIN.
+    pub fn next_data_authority_with_min(
+        mut self,
+        nda_callsign: impl Into<String>,
+        _nda_address: impl Into<String>,
+        min: u8,
+    ) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
-            min: 0,
+            min,
             mrn: None,
             elements: vec![MessageElement::new(
                 "UM160",
@@ -212,9 +237,14 @@ impl CpdlcMessageBuilder {
     }
 
     /// End service — ATC sends standard `UM161`.
-    pub fn end_service(mut self) -> Self {
+    pub fn end_service(self) -> Self {
+        self.end_service_with_min(0)
+    }
+
+    /// End service with explicit MIN.
+    pub fn end_service_with_min(mut self, min: u8) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(CpdlcApplicationMessage {
-            min: 0,
+            min,
             mrn: None,
             elements: vec![MessageElement::new("UM161", vec![])],
             timestamp: Utc::now(),
@@ -234,13 +264,19 @@ impl CpdlcMessageBuilder {
 
     /// Build a full application-level CPDLC message from pre-built elements.
     ///
-    /// MIN is assigned by the server; this builder uses `0` as a local placeholder
-    /// before server-side assignment.
-    /// Use `raw_message()` if you need full control.
-    pub fn application_message(mut self, elements: Vec<MessageElement>) -> Self {
+    /// This compatibility helper sets `MIN=0`. Prefer
+    /// [`application_message_with_min`](Self::application_message_with_min)
+    /// so the sender remains authoritative for MIN sequencing.
+    pub fn application_message(self, elements: Vec<MessageElement>) -> Self {
+        self.application_message_with_min(elements, 0)
+    }
+
+    /// Build a full application-level CPDLC message from pre-built elements
+    /// with an explicit MIN chosen by the sender.
+    pub fn application_message_with_min(mut self, elements: Vec<MessageElement>, min: u8) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(
             CpdlcApplicationMessage {
-                min: 0,
+                min,
                 mrn: None,
                 elements,
                 timestamp: Utc::now(),
@@ -251,10 +287,24 @@ impl CpdlcMessageBuilder {
 
     /// Build an application message with optional MRN (used for response messages
     /// where the caller provides pre-built elements and an MRN).
-    pub fn application_message_with_mrn(mut self, elements: Vec<MessageElement>, mrn: Option<u8>) -> Self {
+    ///
+    /// This compatibility helper sets `MIN=0`. Prefer
+    /// [`application_message_with_min_and_mrn`](Self::application_message_with_min_and_mrn)
+    /// for client-owned MIN sequencing.
+    pub fn application_message_with_mrn(self, elements: Vec<MessageElement>, mrn: Option<u8>) -> Self {
+        self.application_message_with_min_and_mrn(elements, 0, mrn)
+    }
+
+    /// Build an application message with explicit MIN and optional MRN.
+    pub fn application_message_with_min_and_mrn(
+        mut self,
+        elements: Vec<MessageElement>,
+        min: u8,
+        mrn: Option<u8>,
+    ) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(
             CpdlcApplicationMessage {
-                min: 0,
+                min,
                 mrn,
                 elements,
                 timestamp: Utc::now(),
@@ -280,10 +330,23 @@ impl CpdlcMessageBuilder {
     /// Build a response message referencing a previous message's MIN.
     ///
     /// Example: `.response(13, "DM0", vec![])` for WILCO in reply to MIN=13
-    pub fn response(mut self, mrn: u8, id: impl Into<String>, args: Vec<CpdlcArgument>) -> Self {
+    /// This compatibility helper sets `MIN=0`. Prefer
+    /// [`response_with_min`](Self::response_with_min).
+    pub fn response(self, mrn: u8, id: impl Into<String>, args: Vec<CpdlcArgument>) -> Self {
+        self.response_with_min(0, mrn, id, args)
+    }
+
+    /// Build a response message with explicit MIN, referencing a previous MIN via MRN.
+    pub fn response_with_min(
+        mut self,
+        min: u8,
+        mrn: u8,
+        id: impl Into<String>,
+        args: Vec<CpdlcArgument>,
+    ) -> Self {
         self.message_type = Some(CpdlcMessageType::Application(
             CpdlcApplicationMessage {
-                min: 0,
+                min,
                 mrn: Some(mrn),
                 elements: vec![MessageElement::new(id, args)],
                 timestamp: Utc::now(),

@@ -218,9 +218,41 @@ async fn spawn_inbox_listener(
                 };
 
                 let raw = String::from_utf8_lossy(&message.payload).to_string();
-        println!("[{tab_id}] Received: {}", &raw[..raw.len().min(120)]);
+        println!("[{tab_id}] Received raw: {}", &raw[..raw.len().min(120)]);
 
         let envelope = serde_json::from_slice::<openlink_models::OpenLinkEnvelope>(&message.payload).ok();
+
+        if let Some(ref env) = envelope {
+            if let Some((cpdlc, app, _)) = nats_client::extract_cpdlc_application(env) {
+                let ids = app
+                    .elements
+                    .iter()
+                    .map(|e| e.id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",");
+                eprintln!(
+                    "[GUI RECV][APP] tab={} {} -> {} min={} mrn={:?} ids=[{}]",
+                    tab_id,
+                    cpdlc.source,
+                    cpdlc.destination,
+                    app.min,
+                    app.mrn,
+                    ids
+                );
+            } else if let Some((cpdlc, meta, _)) = nats_client::extract_cpdlc_meta(env) {
+                eprintln!(
+                    "[GUI RECV][META] tab={} {} -> {} kind={:?}",
+                    tab_id,
+                    cpdlc.source,
+                    cpdlc.destination,
+                    meta
+                );
+            } else {
+                eprintln!("[GUI RECV] tab={} envelope parsed but no CPDLC payload extracted", tab_id);
+            }
+        } else {
+            eprintln!("[GUI RECV] tab={} failed to parse envelope", tab_id);
+        }
 
         let from_callsign = envelope.as_ref().and_then(|env| {
             nats_client::extract_cpdlc_meta(env)
@@ -284,6 +316,9 @@ async fn spawn_inbox_listener(
                 })
                 .unwrap_or((None, None, None));
 
+            let store_from_callsign = from_callsign.clone();
+            let store_display_text = display_text.clone();
+
             let received = state::ReceivedMessage {
                 timestamp: chrono::Utc::now(),
                 raw_json: raw,
@@ -300,6 +335,15 @@ async fn spawn_inbox_listener(
 
             let mut s = app_state.write();
             if let Some(t) = s.tab_mut_by_id(tab_id) {
+                eprintln!(
+                    "[GUI STORE] tab={} from={:?} min={:?} mrn={:?} response_attr={:?} text={:?}",
+                    tab_id,
+                    store_from_callsign,
+                    min,
+                    mrn,
+                    response_attr,
+                    store_display_text
+                );
                 t.messages.push(received);
             }
         }
@@ -433,7 +477,17 @@ async fn handle_incoming_application(
             aircraft_address,
             app.min,
         );
-        let _ = client.send_to_server(ack).await;
+        eprintln!(
+            "[GUI SEND][LACK] tab={} from={} to={} mrn={} (for incoming min={})",
+            tab_id,
+            setup.callsign,
+            cpdlc.source,
+            app.min,
+            app.min
+        );
+        if let Err(e) = client.send_to_server(ack).await {
+            eprintln!("[GUI SEND][LACK] failed: {e}");
+        }
     }
 
     if !is_aircraft {
@@ -468,6 +522,34 @@ pub fn push_outgoing_message(app_state: &mut Signal<AppState>, tab_id: Uuid, dis
 }
 
 pub fn push_outgoing_message_to(app_state: &mut Signal<AppState>, tab_id: Uuid, display_text: &str, to_callsign: Option<&str>) {
+    push_outgoing_message_to_with_min(app_state, tab_id, display_text, to_callsign, None);
+}
+
+pub fn push_outgoing_message_to_with_min(
+    app_state: &mut Signal<AppState>,
+    tab_id: Uuid,
+    display_text: &str,
+    to_callsign: Option<&str>,
+    min: Option<u8>,
+) {
+    push_outgoing_message_to_with_min_and_mrn(
+        app_state,
+        tab_id,
+        display_text,
+        to_callsign,
+        min,
+        None,
+    );
+}
+
+pub fn push_outgoing_message_to_with_min_and_mrn(
+    app_state: &mut Signal<AppState>,
+    tab_id: Uuid,
+    display_text: &str,
+    to_callsign: Option<&str>,
+    min: Option<u8>,
+    mrn: Option<u8>,
+) {
     let msg = state::ReceivedMessage {
         timestamp: chrono::Utc::now(),
         raw_json: String::new(),
@@ -476,8 +558,8 @@ pub fn push_outgoing_message_to(app_state: &mut Signal<AppState>, tab_id: Uuid, 
         to_callsign: to_callsign.map(|s| s.to_string()),
         display_text: Some(display_text.to_string()),
         is_outgoing: true,
-        min: None,
-        mrn: None,
+        min,
+        mrn,
         response_attr: None,
         responded: false,
     };

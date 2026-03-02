@@ -4,6 +4,7 @@ use std::time::Duration;
 use dioxus::prelude::*;
 use openlink_models::{
     find_definition, ArgType, CpdlcArgument, CpdlcResponseIntent, FlightLevel, MessageElement,
+    ResponseAttribute,
 };
 use openlink_sdk::{
     choose_short_response_intents, closes_dialogue_response_elements, response_attr_to_intents,
@@ -142,6 +143,10 @@ fn root_visible_messages(messages: &[ReceivedMessage]) -> Vec<ReceivedMessage> {
 }
 
 fn response_intents_for_message(msg: &ReceivedMessage) -> Vec<CpdlcResponseIntent> {
+    if matches!(msg.response_attr, Some(ResponseAttribute::Y)) {
+        return vec![CpdlcResponseIntent::Unable, CpdlcResponseIntent::Standby];
+    }
+
     if let Some(attr) = msg.response_attr {
         return response_attr_to_intents(attr);
     }
@@ -257,8 +262,26 @@ pub fn A320View(
     let station_callsign = tab
         .session
         .as_ref()
-        .and_then(|s| s.active_connection.as_ref())
-        .map(|c| c.peer.clone());
+        .and_then(|s| {
+            s.active_connection
+                .as_ref()
+                .map(|c| c.peer.clone())
+                .or_else(|| s.inactive_connection.as_ref().map(|c| c.peer.clone()))
+        })
+        .or_else(|| {
+            tab.messages
+                .iter()
+                .rev()
+                .find_map(|m| {
+                    if m.is_outgoing {
+                        None
+                    } else {
+                        m.from_callsign
+                            .as_ref()
+                            .map(|s| openlink_models::AcarsEndpointCallsign::new(s.as_str()))
+                    }
+                })
+        });
 
     let all_messages = tab.messages.clone();
     drop(state);
@@ -425,7 +448,14 @@ pub fn A320View(
                                                 let _ = client.send_to_server(msg).await;
                                             });
                                         }
-                                        crate::push_outgoing_message(&mut app_state.clone(), tab_id, &label);
+                                        crate::push_outgoing_message_to_with_min_and_mrn(
+                                            &mut app_state.clone(),
+                                            tab_id,
+                                            &label,
+                                            None,
+                                            None,
+                                            Some(min),
+                                        );
                                         active_dcdu_lsk.set(Some(label.clone()));
                                         if matches!(intent, CpdlcResponseIntent::Standby) {
                                             stby_sent_mins.write().insert(min);
@@ -493,7 +523,14 @@ pub fn A320View(
                                                 let _ = client.send_to_server(msg).await;
                                             });
                                         }
-                                        crate::push_outgoing_message(&mut app_state.clone(), tab_id, &label);
+                                        crate::push_outgoing_message_to_with_min_and_mrn(
+                                            &mut app_state.clone(),
+                                            tab_id,
+                                            &label,
+                                            None,
+                                            None,
+                                            Some(min),
+                                        );
                                         active_dcdu_lsk.set(Some(label.clone()));
                                         if matches!(intent, CpdlcResponseIntent::Standby) {
                                             stby_sent_mins.write().insert(min);
@@ -646,7 +683,14 @@ pub fn A320View(
                                                 let _ = client.send_to_server(msg).await;
                                             });
                                         }
-                                        crate::push_outgoing_message(&mut app_state.clone(), tab_id, &label);
+                                        crate::push_outgoing_message_to_with_min_and_mrn(
+                                            &mut app_state.clone(),
+                                            tab_id,
+                                            &label,
+                                            None,
+                                            None,
+                                            Some(min),
+                                        );
                                         active_dcdu_lsk.set(Some(label.clone()));
                                         if matches!(intent, CpdlcResponseIntent::Standby) {
                                             stby_sent_mins.write().insert(min);
@@ -716,7 +760,14 @@ pub fn A320View(
                                                     .map(render_element)
                                                     .collect::<Vec<_>>()
                                                     .join(" / ");
-                                                crate::push_outgoing_message(&mut app_state.clone(), tab_id, &text);
+                                                crate::push_outgoing_message_to_with_min_and_mrn(
+                                                    &mut app_state.clone(),
+                                                    tab_id,
+                                                    &text,
+                                                    None,
+                                                    None,
+                                                    mrn,
+                                                );
                                                 if closes_dialogue_response_elements(&elements) {
                                                     if let Some(mrn) = mrn {
                                                         let mut s = app_state.write();
@@ -770,7 +821,14 @@ pub fn A320View(
                                                     let _ = client.send_to_server(msg).await;
                                                 });
                                             }
-                                            crate::push_outgoing_message(&mut app_state.clone(), tab_id, &label);
+                                            crate::push_outgoing_message_to_with_min_and_mrn(
+                                                &mut app_state.clone(),
+                                                tab_id,
+                                                &label,
+                                                None,
+                                                None,
+                                                Some(min),
+                                            );
                                             active_dcdu_lsk.set(Some(label.clone()));
                                             if matches!(intent, CpdlcResponseIntent::Standby) {
                                                 stby_sent_mins.write().insert(min);

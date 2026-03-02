@@ -32,6 +32,23 @@ pub fn should_auto_send_logical_ack(elements: &[MessageElement], min: u8) -> boo
     min > 0 && !message_contains_logical_ack(elements)
 }
 
+/// Returns true when an incoming message is a logical acknowledgement for
+/// a specific outgoing message MIN.
+///
+/// Matching rule:
+/// - `outgoing_min` must be valid (`> 0`)
+/// - incoming message must contain a logical ACK element (`UM227` or `DM100`)
+/// - incoming `MRN` must equal `outgoing_min`
+pub fn logical_ack_matches_outgoing(
+    outgoing_min: u8,
+    incoming_elements: &[MessageElement],
+    incoming_mrn: Option<u8>,
+) -> bool {
+    outgoing_min > 0
+        && incoming_mrn == Some(outgoing_min)
+        && message_contains_logical_ack(incoming_elements)
+}
+
 /// Returns true if response elements close the referenced dialogue.
 ///
 /// Delegates to the canonical model-level implementation.
@@ -142,6 +159,17 @@ mod tests {
 
         let ack = vec![MessageElement::new("DM100", vec![])];
         assert!(!should_auto_send_logical_ack(&ack, 12));
+    }
+
+    #[test]
+    fn logical_ack_matching_rule() {
+        let ack = vec![MessageElement::new("DM100", vec![])];
+        assert!(logical_ack_matches_outgoing(12, &ack, Some(12)));
+        assert!(!logical_ack_matches_outgoing(12, &ack, Some(11)));
+        assert!(!logical_ack_matches_outgoing(0, &ack, Some(0)));
+
+        let non_ack = vec![MessageElement::new("DM0", vec![])];
+        assert!(!logical_ack_matches_outgoing(12, &non_ack, Some(12)));
     }
 
     #[test]

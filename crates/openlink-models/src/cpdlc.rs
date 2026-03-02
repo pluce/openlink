@@ -117,9 +117,14 @@ impl FromStr for ICAOAirportCode {
 // FlightLevel
 // ---------------------------------------------------------------------------
 
-/// A typed flight level (e.g. FL350 corresponds to `FlightLevel(350)`).
+/// A typed level/altitude value used in CPDLC level arguments.
 ///
-/// Serialises as a bare `u16` for compactness.
+/// Semantics:
+/// - values `< 1000` are treated as flight levels and rendered as `FLxxx`
+/// - values `>= 1000` are treated as altitudes in feet and rendered as raw
+///   numeric values (e.g. `12000`)
+///
+/// Serializes as a bare `u16` for compactness.
 ///
 /// # Examples
 ///
@@ -155,7 +160,11 @@ impl FlightLevel {
 
 impl fmt::Display for FlightLevel {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FL{}", self.0)
+        if self.0 < 1000 {
+            write!(f, "FL{}", self.0)
+        } else {
+            write!(f, "{}", self.0)
+        }
     }
 }
 

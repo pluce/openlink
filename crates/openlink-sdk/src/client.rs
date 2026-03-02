@@ -25,6 +25,8 @@
 
 use async_nats::ConnectOptions;
 use nkeys::KeyPair;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use openlink_models::{
     AcarsEndpointAddress, MessageBuilder, MessageElement, NetworkAddress, NetworkId,
     OpenLinkEnvelope, OpenLinkMessage,
@@ -50,6 +52,7 @@ pub struct OpenLinkClient {
     creds: OpenLinkCredentials,
     network: NetworkId,
     address: NetworkAddress,
+    min_sequences: Arc<Mutex<HashMap<String, u8>>>,
 }
 
 impl OpenLinkClient {
@@ -141,6 +144,7 @@ impl OpenLinkClient {
             creds,
             network: network.clone(),
             address,
+            min_sequences: Arc::new(Mutex::new(HashMap::new())),
         })
     }
 
@@ -217,7 +221,31 @@ impl OpenLinkClient {
             creds,
             network: network.clone(),
             address,
+            min_sequences: Arc::new(Mutex::new(HashMap::new())),
         })
+    }
+
+    /// Advance and return the next MIN for a sender/receiver CPDLC session key.
+    fn next_min_for_session(&self, sender_callsign: &str, receiver_callsign: &str) -> u8 {
+        let key = format!("{}>{}", sender_callsign, receiver_callsign);
+        let mut guard = self
+            .min_sequences
+            .lock()
+            .expect("min sequence mutex poisoned");
+        let entry = guard.entry(key).or_insert(1);
+        let current = if *entry == 0 || *entry > 63 { 1 } else { *entry };
+        *entry = if current >= 63 { 1 } else { current + 1 };
+        current
+    }
+
+    /// Reset MIN sequencing for a sender/receiver CPDLC session key.
+    fn reset_min_for_session(&self, sender_callsign: &str, receiver_callsign: &str) {
+        let key = format!("{}>{}", sender_callsign, receiver_callsign);
+        let mut guard = self
+            .min_sequences
+            .lock()
+            .expect("min sequence mutex poisoned");
+        guard.insert(key, 1);
     }
 
     // ------------------------------------------------------------------
@@ -250,6 +278,7 @@ impl OpenLinkClient {
         aircraft_address: &AcarsEndpointAddress,
         target_station: &str,
     ) -> OpenLinkMessage {
+        self.reset_min_for_session(aircraft_callsign, target_station);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(aircraft_callsign)
             .to(target_station)
@@ -265,6 +294,9 @@ impl OpenLinkClient {
         aircraft_address: &AcarsEndpointAddress,
         accepted: bool,
     ) -> OpenLinkMessage {
+        if accepted {
+            self.reset_min_for_session(atc_callsign, aircraft_callsign);
+        }
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(atc_callsign)
             .to(aircraft_callsign)
@@ -279,6 +311,7 @@ impl OpenLinkClient {
         aircraft_callsign: &str,
         aircraft_address: &AcarsEndpointAddress,
     ) -> OpenLinkMessage {
+        self.reset_min_for_session(atc_callsign, aircraft_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(atc_callsign)
             .to(aircraft_callsign)
@@ -309,10 +342,11 @@ impl OpenLinkClient {
         aircraft_address: &AcarsEndpointAddress,
         nda_callsign: &str,
     ) -> OpenLinkMessage {
+        let min = self.next_min_for_session(atc_callsign, aircraft_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(atc_callsign)
             .to(aircraft_callsign)
-            .next_data_authority(nda_callsign, "")
+            .next_data_authority_with_min(nda_callsign, "", min)
             .build()
     }
 
@@ -324,10 +358,11 @@ impl OpenLinkClient {
         aircraft_address: &AcarsEndpointAddress,
         next_station: &str,
     ) -> OpenLinkMessage {
+        let min = self.next_min_for_session(atc_callsign, aircraft_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(atc_callsign)
             .to(aircraft_callsign)
-            .contact_request(next_station)
+            .contact_request_with_min(next_station, min)
             .build()
     }
 
@@ -338,10 +373,11 @@ impl OpenLinkClient {
         aircraft_callsign: &str,
         aircraft_address: &AcarsEndpointAddress,
     ) -> OpenLinkMessage {
+        let min = self.next_min_for_session(atc_callsign, aircraft_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(atc_callsign)
             .to(aircraft_callsign)
-            .end_service()
+            .end_service_with_min(min)
             .build()
     }
 
@@ -369,10 +405,11 @@ impl OpenLinkClient {
         elements: Vec<MessageElement>,
         mrn: Option<u8>,
     ) -> OpenLinkMessage {
+        let min = self.next_min_for_session(station_callsign, aircraft_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(station_callsign)
             .to(aircraft_callsign)
-            .application_message_with_mrn(elements, mrn)
+            .application_message_with_min_and_mrn(elements, min, mrn)
             .build()
     }
 
@@ -385,10 +422,11 @@ impl OpenLinkClient {
         elements: Vec<MessageElement>,
         mrn: Option<u8>,
     ) -> OpenLinkMessage {
+        let min = self.next_min_for_session(aircraft_callsign, station_callsign);
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(aircraft_callsign)
             .to(station_callsign)
-            .application_message_with_mrn(elements, mrn)
+            .application_message_with_min_and_mrn(elements, min, mrn)
             .build()
     }
 
@@ -409,11 +447,16 @@ impl OpenLinkClient {
         } else {
             LOGICAL_ACK_UPLINK_ID
         };
+        let min = self.next_min_for_session(sender_callsign, receiver_callsign);
 
         MessageBuilder::cpdlc(aircraft_callsign, aircraft_address.to_string())
             .from(sender_callsign)
             .to(receiver_callsign)
-            .application_message_with_mrn(vec![MessageElement::new(ack_id, vec![])], Some(mrn))
+            .application_message_with_min_and_mrn(
+                vec![MessageElement::new(ack_id, vec![])],
+                min,
+                Some(mrn),
+            )
             .build()
     }
 

@@ -53,8 +53,9 @@ pub use subjects::NatsSubjects;
 
 pub use cpdlc_runtime::{
     choose_short_response_intents, closes_dialogue_response_elements,
-    is_logical_ack_element_id, message_contains_logical_ack, response_attr_to_intents,
-    should_auto_send_logical_ack, LOGICAL_ACK_DOWNLINK_ID, LOGICAL_ACK_UPLINK_ID,
+    is_logical_ack_element_id, logical_ack_matches_outgoing, message_contains_logical_ack,
+    response_attr_to_intents, should_auto_send_logical_ack, LOGICAL_ACK_DOWNLINK_ID,
+    LOGICAL_ACK_UPLINK_ID,
 };
 
 // Re-export builders from openlink-models for ergonomic usage.

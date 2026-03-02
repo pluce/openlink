@@ -27,12 +27,6 @@ pub struct CPDLCSession {
     pub active_connection: Option<CPDLCConnection>,
     pub inactive_connection: Option<CPDLCConnection>,
     pub next_data_authority: Option<AcarsRoutingEndpoint>,
-    /// Next MIN to assign for aircraft-originated (downlink) messages (1–63 cyclic).
-    #[serde(default)]
-    pub min_counter_aircraft: u8,
-    /// Next MIN to assign for station-originated (uplink) messages (1–63 cyclic).
-    #[serde(default)]
-    pub min_counter_station: u8,
 }
 
 /// A single CPDLC connection to a ground station within a session.
@@ -68,20 +62,6 @@ impl From<&AcarsRoutingEndpoint> for CPDLCSessionId {
     fn from(endpoint: &AcarsRoutingEndpoint) -> Self {
         CPDLCSessionId(endpoint.address.to_string())
     }
-}
-
-/// Allocate the next CPDLC MIN from a per-direction counter.
-///
-/// MIN values are emitted in the range 1..=63 and wrap back to 1.
-/// If persisted state contains 0 (legacy), it is normalized to 1.
-fn next_min(counter: &mut u8) -> u8 {
-    let current = if *counter == 0 || *counter > 63 {
-        1
-    } else {
-        *counter
-    };
-    *counter = if current >= 63 { 1 } else { current + 1 };
-    current
 }
 
 #[allow(dead_code)] // state machine methods exercised in tests, wired from production code as protocol grows
@@ -130,8 +110,6 @@ impl CPDLCSession {
             active_connection: None,
             inactive_connection: None,
             next_data_authority: None,
-            min_counter_aircraft: 1,
-            min_counter_station: 1,
         }
     }
 
@@ -355,8 +333,8 @@ impl CPDLCServer {
     /// resolve the callsign to a network address for forwarding and
     /// broadcast session updates.
     /// Returns `(destination_callsign, updated_session, modified_envelope)`.
-    /// For application messages the envelope carries the server-assigned MIN;
-    /// for meta messages the original envelope is returned unchanged.
+    /// For application messages the envelope can carry normalized arguments;
+    /// MIN ownership remains client-side.
     pub async fn handle_cpdlc_message(
         &self,
         cpdlc: CpdlcEnvelope,
@@ -370,7 +348,7 @@ impl CPDLCServer {
                 let (dest, session, modified_cpdlc) = self
                     .handle_cpdlc_application_message(msg.clone(), cpdlc.clone(), acars.clone())
                     .await?;
-                // Rebuild the full envelope with the modified CPDLC (server-assigned MIN)
+                // Rebuild the full envelope with the normalized CPDLC payload.
                 let mut modified_env = original_envelope.clone();
                 if let OpenLinkMessage::Acars(ref mut acars_env) = modified_env.payload {
                     acars_env.message = AcarsMessage::CPDLC(modified_cpdlc);
@@ -390,7 +368,7 @@ impl CPDLCServer {
     /// Process a CPDLC application message (uplinks / downlinks).
     ///
     /// 1. Validates that the active connection is in `Connected` state.
-    /// 2. Assigns a MIN (Message Identification Number, 1–63 cyclic) when missing (`min=0`).
+    /// 2. Validates that client-provided MIN is in the protocol range (1..=63).
     /// 3. Applies server-side session mutations for selected UM session-management elements.
     /// 4. Returns the destination callsign for forwarding.
     pub async fn handle_cpdlc_application_message(
@@ -440,9 +418,6 @@ impl CPDLCServer {
                         }
                     }
 
-                    // Determine if the source is the aircraft (downlink) or a station (uplink).
-                    let is_downlink = source == session.aircraft.callsign;
-
                     // Validate the active connection is Connected.
                     let active = session
                         .active_connection
@@ -454,14 +429,12 @@ impl CPDLCServer {
                         ));
                     }
 
-                    // Assign MIN only when missing; this allows progressively
-                    // moving MIN ownership to clients while keeping compatibility.
-                    if msg.min == 0 {
-                        msg.min = if is_downlink {
-                            next_min(&mut session.min_counter_aircraft)
-                        } else {
-                            next_min(&mut session.min_counter_station)
-                        };
+                    // MIN ownership is client-side. Reject invalid values.
+                    if !(1..=63).contains(&msg.min) {
+                        return Err(anyhow::anyhow!(
+                            "invalid CPDLC MIN {} (expected 1..=63, client-assigned)",
+                            msg.min
+                        ));
                     }
 
                     // Session-management commands now carried as standard
