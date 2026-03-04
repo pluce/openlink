@@ -6,6 +6,7 @@ members = [
     "crates/openlink-loadtest",
     "crates/openlink-sdk",
     "crates/openlink-gui",
+    "crates/openlink-hoppie",
     "crates/mock-oidc",
     "crates/openlink-server",
 ]

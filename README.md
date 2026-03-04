@@ -17,6 +17,7 @@ OpenLink uses an event-driven architecture on top of NATS subjects.
 - Clients publish outbound envelopes to `openlink.v1.{network}.outbox.{address}`.
 - The server subscribes wildcard outbox subjects, applies protocol/session logic, and forwards to destination inbox subjects.
 - Clients subscribe their own inbox subject and update local UI/application state.
+- The **Hoppie bridge** (`openlink-hoppie`) connects external Hoppie ACARS clients to the OpenLink network by translating CPDLC packets and managing session lifecycle on their behalf.
 
 Important design rule:
 
@@ -35,6 +36,12 @@ For a complete integrator guide, see [docs/sdk/README.md](docs/sdk/README.md).
 | `openlink-sdk` | [crates/openlink-sdk](crates/openlink-sdk) | High-level client API: auth exchange, NATS connection, subject conventions, send/subscribe helpers. |
 | `openlink-server` | [crates/openlink-server](crates/openlink-server) | Relay/router service. Handles station registry, CPDLC session state machine, forwarding, session updates. |
 | `openlink-auth` | [crates/openlink-auth](crates/openlink-auth) | Auth gateway. Exchanges OIDC authorization codes for scoped NATS JWTs. |
+
+### Bridge / interop crates
+
+| Crate | Path | Purpose |
+|---|---|---|
+| `openlink-hoppie` | [crates/openlink-hoppie](crates/openlink-hoppie) | Bidirectional bridge between the Hoppie ACARS network and OpenLink. Translates CPDLC packets, manages logon/connect lifecycle, tracks MIN/MRN sequences. |
 
 ### Demo / tooling crates
 
@@ -108,6 +115,28 @@ cargo run -p openlink-gui
 ```
 
 or CLI client (examples below).
+
+### 5) Start the Hoppie bridge (optional)
+
+Relays CPDLC messages between Hoppie-connected flight sims and the OpenLink network.
+The bridge requires its own auth identity (separate from the GUI).
+
+```bash
+cargo run -p openlink-hoppie -- \
+  --hoppie-logon YOUR_HOPPIE_KEY \
+  --callsigns LFXB \
+  --auth-code HOPPIE_BRIDGE \
+  --network-id demonetwork \
+  --nats-url nats://localhost:4222 \
+  --auth-url http://localhost:3001 \
+  --poll-interval-secs 20
+```
+
+The bridge registers Hoppie aircraft on OpenLink so the server can route messages to them.
+When a Hoppie pilot sends `REQUEST LOGON`, the bridge relays it as a `LogonRequest`.
+When the ATC accepts via the GUI, the bridge auto-completes the CPDLC session and sends `LOGON ACCEPTED` back to Hoppie.
+
+See [crates/openlink-hoppie/README.md](crates/openlink-hoppie/README.md) for details.
 
 ## CLI usage examples
 
@@ -248,6 +277,7 @@ Most components work with defaults, but these are commonly overridden:
   - [crates/openlink-sdk/README.md](crates/openlink-sdk/README.md)
   - [crates/openlink-auth/README.md](crates/openlink-auth/README.md)
   - [crates/openlink-server/README.md](crates/openlink-server/README.md)
+  - [crates/openlink-hoppie/README.md](crates/openlink-hoppie/README.md)
   - [crates/openlink-cli/README.md](crates/openlink-cli/README.md)
   - [crates/openlink-gui/README.md](crates/openlink-gui/README.md)
   - [crates/mock-oidc/README.md](crates/mock-oidc/README.md)

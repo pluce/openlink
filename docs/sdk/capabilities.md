@@ -52,6 +52,14 @@ OpenLink includes language-neutral conformance assets:
 
 This supports consistent behavior across Rust, TypeScript, and future SDKs.
 
+## 6) External network bridging
+
+OpenLink includes infrastructure for bridging external ACARS networks:
+
+- **Hoppie bridge** (`openlink-hoppie`): translates Hoppie CPDLC packets to/from OpenLink envelopes, manages logon/connection lifecycle on behalf of external aircraft, and tracks MIN/MRN sequences across both systems.
+- The bridge runs as a standard OpenLink client with its own network identity, registering external aircraft in the station registry so the server can route messages to them.
+- External clients interact through their native protocol (Hoppie HTTP API) while OpenLink clients see standard CPDLC sessions.
+
 ## Related pages
 
 - [Concepts](concepts.md)

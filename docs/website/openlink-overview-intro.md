@@ -14,6 +14,7 @@ OpenLink is a reference platform composed of:
 - an integration SDK (**openlink-sdk**),
 - an auth bridge (**openlink-auth** + OIDC flow),
 - a routing/session authority server (**openlink-server**),
+- an external network bridge (**openlink-hoppie**) for Hoppie ACARS interop,
 - operator-facing clients (CLI, GUI),
 - and load/performance tooling.
 
@@ -38,6 +39,7 @@ OpenLink is positioned as an integration layer for aviation-style operations:
 
 - It can support workflows similar to **VATSIM/IVAO** controller–pilot exchanges.
 - It models **ICAO CPDLC/ACARS** message behavior for realistic semantics.
+- The **Hoppie bridge** (`openlink-hoppie`) provides concrete interoperability: Hoppie-connected flight simulators can exchange CPDLC messages with OpenLink stations transparently.
 - It does not replace public networks directly; it provides a programmable backbone to integrate with them.
 
 ---

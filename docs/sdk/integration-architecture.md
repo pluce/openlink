@@ -95,6 +95,23 @@ ATC product:
 - Integration module: OpenLink adapter
 - Runtime module: NATS client
 
+## External network bridge
+
+OpenLink supports bridging external ACARS networks via gateway clients.
+
+The **Hoppie bridge** (`openlink-hoppie`) is a reference implementation:
+
+- Runs as a standard OpenLink client with its own network identity.
+- Polls the Hoppie HTTP API and translates CPDLC packets to/from OpenLink envelopes.
+- Registers external aircraft in the station registry so the server routes messages to the bridge.
+- Manages the logon → connection lifecycle on behalf of external aircraft (auto-injects `ConnectionRequest`/`ConnectionResponse` after logon acceptance).
+
+```
+Hoppie aircraft ←→ HTTPS ←→ openlink-hoppie ←→ NATS ←→ OpenLink server ←→ NATS ←→ GUI / CLI
+```
+
+Key design: the bridge is infrastructure, not the ATC operator. It has a separate network identity (CID) from the GUI so the server can route messages to external aircraft independently.
+
 ## Design rule
 
 If logic must behave identically across multiple languages, keep it in the spec/shared contract, not inside one specific UI implementation.

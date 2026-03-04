@@ -3736,6 +3736,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "openlink-hoppie"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "futures",
+ "openlink-models",
+ "openlink-sdk",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "openlink-loadtest"
 version = "0.1.0"
 dependencies = [

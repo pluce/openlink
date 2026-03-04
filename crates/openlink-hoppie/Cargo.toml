@@ -1,0 +1,19 @@
+[package]
+name = "openlink-hoppie"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+openlink-models = { workspace = true }
+openlink-sdk = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
