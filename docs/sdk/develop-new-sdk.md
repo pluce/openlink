@@ -29,7 +29,8 @@ Implement a language SDK that is:
    - logical-ack eligibility and builder,
    - response attribute to intents,
    - short-response selection precedence,
-   - dialogue close/standby behavior.
+   - dialogue close/standby behavior,
+   - sender-owned MIN sequencing (`1..63`, wrap, reset on session setup).
 
 5. **High-level workflow helpers**
    - logon/connection/handover/end-service helpers,

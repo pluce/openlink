@@ -52,7 +52,8 @@ The SDK should help integrators:
 
 - consume authoritative session updates,
 - map protocol state into UI-friendly models,
-- avoid duplicating protocol state machines locally.
+- avoid duplicating protocol state machines locally,
+- assign sender-owned MINs (range `1..63`, wrap, reset on session setup transitions).
 
 SDK APIs should make this boundary explicit so product teams implement UX logic, not protocol ownership.
 

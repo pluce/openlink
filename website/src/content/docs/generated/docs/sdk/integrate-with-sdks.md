@@ -50,6 +50,7 @@ Use this page as the practical entry point for application integration.
 - [ ] inbox/outbox subject usage compliant,
 - [ ] CPDLC IDs/arguments validated from catalog,
 - [ ] logical-ack and short-response rules delegated to SDK runtime,
+- [ ] sender-owned MIN sequencing implemented (`1..63`, wrap, reset on session setup),
 - [ ] conformance fixtures pass.
 
 ## Related pages

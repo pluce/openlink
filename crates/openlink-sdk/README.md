@@ -85,6 +85,9 @@ while let Some(raw) = inbox.next().await {
 - **Envelope framing** – `send_to_server` automatically wraps an
   `OpenLinkMessage` in an `OpenLinkEnvelope` with UUID, timestamp, routing, and
   auth token.
+- **Sender-owned MIN sequencing** – CPDLC application builders assign MINs
+  locally in the `1..63` operational range, with wrap and reset on session setup
+  transitions.
 - **Station-to-station** – `send_to_station` lets the server (or any
   authorised peer) push an envelope directly into another station's inbox.
 - **Subject authority** – `NatsSubjects` is the single place that defines every

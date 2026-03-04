@@ -133,7 +133,7 @@ Once connected, CPDLC messages are exchanged as **Application** messages:
 - **Downlinks (Aircraft → ATC):** DM (Downlink Message) elements, e.g. `DM0 WILCO`, `DM9 REQUEST CLIMB TO [level]`
 
 Each Application message contains:
-- `min` — Message Identification Number (assigned by the server, unique per dialogue, range `1..63` cyclic)
+- `min` — Message Identification Number (assigned by the sender SDK, unique per dialogue, range `1..63` cyclic)
 - `mrn` — Message Reference Number (references the MIN of the message being responded to)
 - `elements` — Array of `{ id, args }` objects referencing the CPDLC catalog
 - `timestamp` — ISO 8601 timestamp
@@ -167,7 +167,7 @@ ATC sends: CLIMB TO FL360 (min=42)
   ↓
 Pilot responds: STANDBY (mrn=42) → dialog stays OPEN
   ↓
-Pilot responds: REQUEST FL380 // DUE TO WEATHER (mrn=42, server assigns min=99)
+Pilot responds: REQUEST FL380 // DUE TO WEATHER (mrn=42, sender SDK assigns min)
   ↓
 ATC responds: ROGER (mrn=99) → dialog CLOSED
 ```
@@ -176,7 +176,7 @@ ATC responds: ROGER (mrn=99) → dialog CLOSED
 
 - **STANDBY (DM2)** keeps the dialog OPEN — the pilot can still send a definitive response later. The DCDU badge shows "STBY" in green highlight, and the STANDBY button is removed.
 - **WILCO/UNABLE/ROGER** close the dialog — the DCDU badge shows the response label.
-- **Server-assigned MINs** — The server assigns MINs to all downlinks, but never sends them back to the emitting client. The client resolves this with a **heuristic**: when an incoming message references an unknown MRN, the client finds the most recent outgoing "sent" message and assigns the incoming MRN as its MIN. This allows the dialog chain to be walked back to the root uplink.
+- **Sender-owned MINs** — Each SDK assigns MINs locally in the `1..63` range (wrapping from 63 back to 1, resetting on session setup transitions). The MIN is included in the outgoing message by the sender. Incoming MRN references are matched against known outgoing MINs to walk the dialog chain back to the root uplink.
 
 ### Message Catalog
 

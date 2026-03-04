@@ -251,30 +251,14 @@ fn is_positive_closure_intent(intent: CpdlcResponseIntent) -> bool {
 fn find_dialogue_message_by_min<'a>(
     messages: &'a [ReceivedMessage],
     min: u8,
+    callsign: &str,
 ) -> Option<&'a ReceivedMessage> {
     messages
         .iter()
-        .find(|m| m.min == Some(min) && !is_logical_ack(m) && !is_logon_line(m))
+        .find(|m| m.min == Some(min) && !is_logical_ack(m) && !is_logon_line(m) && dialogue_callsign(m).as_deref() == Some(callsign))
 }
 
-fn select_flight_for_mrn(tab: &mut TabState, mrn: u8) {
-    let target_callsign = tab
-        .messages
-        .iter()
-        .rev()
-        .find(|m| m.min == Some(mrn) && !is_logical_ack(m) && !is_logon_line(m))
-        .and_then(|m| {
-            if m.is_outgoing {
-                m.to_callsign.clone()
-            } else {
-                m.from_callsign.clone()
-            }
-        });
-
-    let Some(target_callsign) = target_callsign else {
-        return;
-    };
-
+fn select_flight_by_callsign(tab: &mut TabState, aircraft_callsign: &str) {
     let mut sorted_callsigns: Vec<String> = tab
         .atc_sessions
         .values()
@@ -282,20 +266,85 @@ fn select_flight_for_mrn(tab: &mut TabState, mrn: u8) {
         .collect();
     sorted_callsigns.sort();
     sorted_callsigns.dedup();
-
-    if let Some(idx) = sorted_callsigns
-        .iter()
-        .position(|c| c == &target_callsign)
-    {
+    if let Some(idx) = sorted_callsigns.iter().position(|c| c == aircraft_callsign) {
         tab.selected_flight_idx = Some(idx);
     }
+}
+
+fn find_linked_flight(tab: &TabState, aircraft_callsign: &str) -> Option<AtcLinkedFlight> {
+    tab.atc_sessions.values().find_map(|session| {
+        let cs = session.aircraft.as_ref()?.to_string();
+        if cs != aircraft_callsign {
+            return None;
+        }
+        let aircraft_address = session.aircraft_address.as_ref()?.clone();
+        let phase = session
+            .active_connection
+            .as_ref()
+            .map(|c| c.phase)
+            .or_else(|| session.inactive_connection.as_ref().map(|c| c.phase))
+            .unwrap_or(CpdlcConnectionPhase::Terminated);
+        Some(AtcLinkedFlight {
+            callsign: cs.clone(),
+            aircraft_callsign: cs,
+            aircraft_address,
+            phase,
+        })
+    })
 }
 
 fn is_dialogue_candidate(msg: &ReceivedMessage) -> bool {
     !is_logical_ack(msg) && !is_logon_line(msg) && msg.min.is_some()
 }
 
-fn open_dialogue_last_messages(messages: &[ReceivedMessage]) -> Vec<ReceivedMessage> {
+/// Returns the aircraft callsign involved in a dialogue message,
+/// used to scope MIN/MRN matching per aircraft session.
+fn dialogue_callsign(msg: &ReceivedMessage) -> Option<String> {
+    if msg.is_outgoing {
+        msg.to_callsign.clone()
+    } else {
+        msg.from_callsign.clone()
+    }
+}
+
+/// Visual flag displayed on a pending dialogue card.
+#[derive(Debug, Clone)]
+enum DialogueFlag {
+    None,
+    Standby(chrono::DateTime<chrono::Utc>),
+    Closed {
+        intent: CpdlcResponseIntent,
+        positive: bool,
+    },
+    Received(chrono::DateTime<chrono::Utc>),
+}
+
+/// Pre-computed dialogue entry for the pending requests queue.
+/// Bundles the aircraft identity, actionable MIN, display text, response intents,
+/// and visual state — eliminating ad-hoc per-card recomputation in the render loop.
+#[derive(Debug, Clone)]
+struct PendingDialogue {
+    /// Aircraft callsign — the identity anchor for all message targeting.
+    aircraft_callsign: String,
+    /// MIN of the request to respond to (becomes MRN of the response).
+    action_min: Option<u8>,
+    /// Human-readable text for the request card.
+    display_text: String,
+    /// Available response buttons (empty = no action buttons shown).
+    response_intents: Vec<CpdlcResponseIntent>,
+    /// Whether the original message had ResponseAttribute::Y (controls button layout).
+    is_y_response: bool,
+    /// Timestamp of the dialogue's latest message.
+    timestamp: chrono::DateTime<chrono::Utc>,
+    /// CSS class for the card container.
+    card_class: &'static str,
+    /// Visual flag (standby clock, closure badge, received indicator).
+    flag: DialogueFlag,
+    /// Sort priority: 0 = needs action, 1 = monitoring, 2 = closing.
+    priority: u8,
+}
+
+fn build_pending_dialogues(messages: &[ReceivedMessage]) -> Vec<PendingDialogue> {
     #[derive(Debug, Clone)]
     struct DialogueTrack {
         mins: Vec<u8>,
@@ -303,27 +352,32 @@ fn open_dialogue_last_messages(messages: &[ReceivedMessage]) -> Vec<ReceivedMess
         closed: bool,
     }
 
-    let mut min_to_root: HashMap<u8, u8> = HashMap::new();
-    let mut dialogues: HashMap<u8, DialogueTrack> = HashMap::new();
+    // Scope dialogue tracking by (callsign, root_min) to avoid cross-aircraft MIN collisions.
+    let mut min_to_root: HashMap<(String, u8), u8> = HashMap::new();
+    let mut dialogues: HashMap<(String, u8), DialogueTrack> = HashMap::new();
 
     for (idx, msg) in messages.iter().enumerate() {
         if !is_dialogue_candidate(msg) {
             continue;
         }
-
-        let Some(min) = msg.min else {
+        let Some(min) = msg.min else { continue };
+        let Some(cs) = dialogue_callsign(msg) else {
             continue;
         };
 
         let root = if let Some(parent) = msg.mrn {
-            min_to_root.get(&parent).copied().unwrap_or(min)
+            min_to_root
+                .get(&(cs.clone(), parent))
+                .copied()
+                .unwrap_or(min)
         } else {
             min
         };
 
-        min_to_root.insert(min, root);
+        min_to_root.insert((cs.clone(), min), root);
 
-        let track = dialogues.entry(root).or_insert(DialogueTrack {
+        let key = (cs, root);
+        let track = dialogues.entry(key).or_insert(DialogueTrack {
             mins: Vec::new(),
             last_index: idx,
             closed: false,
@@ -338,66 +392,153 @@ fn open_dialogue_last_messages(messages: &[ReceivedMessage]) -> Vec<ReceivedMess
         }
     }
 
-    let mut out: Vec<ReceivedMessage> = dialogues
-        .values()
-        .filter_map(|d| {
-            let msg = &messages[d.last_index];
-            if !d.closed || is_recent_closure_message(msg) {
-                Some(msg.clone())
-            } else {
-                None
+    let mut out: Vec<PendingDialogue> = Vec::new();
+
+    for d in dialogues.values() {
+        let req = &messages[d.last_index];
+        if d.closed && !is_recent_closure_message(req) {
+            continue;
+        }
+
+        let recent_closure = is_recent_closure_message(req);
+        let cs = dialogue_callsign(req).unwrap_or_default();
+
+        // Resolve original actionable message.
+        let action_source = if is_standby_message(req) || recent_closure {
+            req.mrn
+                .and_then(|mrn| find_dialogue_message_by_min(messages, mrn, &cs))
+        } else if !req.is_outgoing {
+            Some(req)
+        } else {
+            None
+        };
+
+        let standby_from_aircraft = !req.is_outgoing && is_standby_message(req);
+        let standby_from_atc = req.is_outgoing && is_standby_message(req);
+        let closure_intent = if recent_closure {
+            closing_flag_intent(req)
+        } else {
+            None
+        };
+        let closure_positive = closure_intent
+            .map(is_positive_closure_intent)
+            .unwrap_or(false);
+        let action_min = action_source.and_then(|m| m.min);
+
+        // Compute response intents.
+        let is_y_response = matches!(
+            action_source.and_then(|m| m.response_attr),
+            Some(ResponseAttribute::Y)
+        );
+        let mut response_intents = action_source
+            .map(response_intents_for_message)
+            .unwrap_or_default();
+        if is_y_response {
+            response_intents = vec![CpdlcResponseIntent::Unable, CpdlcResponseIntent::Standby];
+        } else if action_source.is_some() && response_intents.is_empty() {
+            response_intents = vec![
+                CpdlcResponseIntent::Wilco,
+                CpdlcResponseIntent::Unable,
+                CpdlcResponseIntent::Standby,
+            ];
+        }
+        if standby_from_atc {
+            response_intents.retain(|i| !matches!(i, CpdlcResponseIntent::Standby));
+        }
+
+        let needs_atc_response =
+            !recent_closure && action_min.is_some() && !response_intents.is_empty();
+
+        // Display text: use the original request text.
+        let display_text = if standby_from_aircraft || standby_from_atc || recent_closure {
+            action_source
+                .and_then(|m| m.display_text.clone())
+                .unwrap_or_else(|| {
+                    req.display_text
+                        .clone()
+                        .unwrap_or_else(|| "Unknown request".into())
+                })
+        } else {
+            req.display_text
+                .clone()
+                .unwrap_or_else(|| "Unknown request".into())
+        };
+
+        // Aircraft callsign: always resolve from action_source when available.
+        let aircraft_callsign = if standby_from_aircraft || standby_from_atc || recent_closure {
+            action_source
+                .and_then(dialogue_callsign)
+                .unwrap_or_else(|| cs.clone())
+        } else {
+            cs.clone()
+        };
+
+        // Card CSS class.
+        let card_class = if standby_from_aircraft {
+            "pending-request-item standby-aircraft"
+        } else if standby_from_atc {
+            "pending-request-item standby-atc"
+        } else if recent_closure && closure_positive {
+            "pending-request-item closed-positive"
+        } else if recent_closure {
+            "pending-request-item closed-negative"
+        } else {
+            "pending-request-item"
+        };
+
+        // Visual flag.
+        let flag = if standby_from_aircraft || standby_from_atc {
+            DialogueFlag::Standby(req.timestamp)
+        } else if let Some(intent) = closure_intent {
+            DialogueFlag::Closed {
+                intent,
+                positive: closure_positive,
             }
-        })
-        .collect();
+        } else if req.is_outgoing
+            && !recent_closure
+            && !is_closing_response_message(req)
+            && !standby_from_atc
+        {
+            DialogueFlag::Received(req.timestamp)
+        } else {
+            DialogueFlag::None
+        };
 
-    // Most recent open dialogue first for operator scanning.
-    out.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+        // Sort priority.
+        let priority = if recent_closure {
+            2
+        } else if needs_atc_response || !req.is_outgoing {
+            0
+        } else {
+            1
+        };
+
+        // Only include response intents when action buttons should show.
+        let final_intents = if needs_atc_response {
+            response_intents
+        } else {
+            vec![]
+        };
+
+        out.push(PendingDialogue {
+            aircraft_callsign,
+            action_min,
+            display_text,
+            response_intents: final_intents,
+            is_y_response,
+            timestamp: req.timestamp,
+            card_class,
+            flag,
+            priority,
+        });
+    }
+
+    out.sort_by(|a, b| {
+        a.priority
+            .cmp(&b.priority)
+            .then_with(|| b.timestamp.cmp(&a.timestamp))
+    });
     out
-}
-
-fn pending_queue_priority(req: &ReceivedMessage, messages: &[ReceivedMessage]) -> u8 {
-    let recent_closure = is_recent_closure_message(req);
-    if recent_closure {
-        return 2;
-    }
-
-    let action_source = if is_standby_message(req) || recent_closure {
-        req.mrn.and_then(|mrn| find_dialogue_message_by_min(messages, mrn))
-    } else if !req.is_outgoing {
-        Some(req)
-    } else {
-        None
-    };
-
-    let standby_from_atc = req.is_outgoing && is_standby_message(req);
-    let action_target_min = action_source.and_then(|m| m.min);
-    let is_y_response = matches!(
-        action_source.and_then(|m| m.response_attr),
-        Some(ResponseAttribute::Y)
-    );
-
-    let mut response_intents = action_source
-        .map(response_intents_for_message)
-        .unwrap_or_default();
-    if is_y_response {
-        response_intents = vec![CpdlcResponseIntent::Unable, CpdlcResponseIntent::Standby];
-    } else if action_source.is_some() && response_intents.is_empty() {
-        response_intents = vec![
-            CpdlcResponseIntent::Wilco,
-            CpdlcResponseIntent::Unable,
-            CpdlcResponseIntent::Standby,
-        ];
-    }
-    if standby_from_atc {
-        response_intents.retain(|i| !matches!(i, CpdlcResponseIntent::Standby));
-    }
-
-    let needs_atc_response = action_target_min.is_some() && !response_intents.is_empty();
-    if needs_atc_response || !req.is_outgoing {
-        0
-    } else {
-        1
-    }
 }
 
 fn selected_group(key: &str) -> Option<&str> {
@@ -706,16 +847,11 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
         .cloned()
         .collect();
 
-    let open_dialogues = open_dialogue_last_messages(&messages);
-    let mut ordered_dialogues = open_dialogues.clone();
-    ordered_dialogues.sort_by(|a, b| {
-        pending_queue_priority(a, &messages)
-            .cmp(&pending_queue_priority(b, &messages))
-            .then_with(|| b.timestamp.cmp(&a.timestamp))
-    });
+    let pending_dialogues = build_pending_dialogues(&messages);
 
     let compose_elements = tab.compose_elements.clone();
     let compose_mrn = tab.compose_mrn;
+    let compose_target_cs = tab.compose_target_callsign.clone();
     let selection_key = tab.cmd_search_query.clone();
     let group = selected_group(&selection_key);
     let command = selected_command(&selection_key);
@@ -730,7 +866,14 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
             .join(" AND ")
     };
 
-    let can_compose_on_selected = selected_flight
+    // When responding to a pending request, lock target to the aircraft that
+    // originated the request (compose_target_cs) regardless of left-panel selection.
+    let compose_flight: Option<AtcLinkedFlight> = compose_target_cs
+        .as_ref()
+        .and_then(|cs| linked_flights.iter().find(|f| f.aircraft_callsign == *cs).cloned())
+        .or_else(|| selected_flight.clone());
+
+    let can_compose_on_selected = compose_flight
         .as_ref()
         .is_some_and(|f| f.phase == CpdlcConnectionPhase::Connected);
 
@@ -778,7 +921,7 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                 div { class: "pending-requests-section",
                     div { class: "console-section-header", "PENDING REQUESTS QUEUE" }
                     div { class: "pending-requests-body",
-                        if pending_logons.is_empty() && open_dialogues.is_empty() {
+                        if pending_logons.is_empty() && pending_dialogues.is_empty() {
                             div { class: "no-pending", "NO PENDING REQUESTS" }
                         } else {
                             for flight in pending_logons.iter() {
@@ -815,155 +958,45 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                     }
                                 }
                             }
-                            for req in ordered_dialogues.iter() {
+                            for dlg in pending_dialogues.iter() {
                                 {
-                                    let recent_closure = is_recent_closure_message(req);
-                                    let action_source = if is_standby_message(req) || recent_closure {
-                                        req.mrn.and_then(|mrn| find_dialogue_message_by_min(&messages, mrn))
-                                    } else if !req.is_outgoing {
-                                        Some(req)
-                                    } else {
-                                        None
-                                    };
-                                    let standby_from_aircraft = !req.is_outgoing && is_standby_message(req);
-                                    let standby_from_atc = req.is_outgoing && is_standby_message(req);
-                                    let closure_intent = if recent_closure {
-                                        closing_flag_intent(req)
-                                    } else {
-                                        None
-                                    };
-                                    let closure_positive = closure_intent
-                                        .map(is_positive_closure_intent)
-                                        .unwrap_or(false);
-                                    let action_target_min = action_source.and_then(|m| m.min);
-                                    let is_y_response = matches!(
-                                        action_source.and_then(|m| m.response_attr),
-                                        Some(ResponseAttribute::Y)
-                                    );
-                                    let mut response_intents = action_source
-                                        .map(response_intents_for_message)
-                                        .unwrap_or_default();
-                                    if is_y_response {
-                                        response_intents = vec![
-                                            CpdlcResponseIntent::Unable,
-                                            CpdlcResponseIntent::Standby,
-                                        ];
-                                    } else if action_source.is_some() && response_intents.is_empty() {
-                                        // Defensive fallback: still expose core ATC actions when catalog
-                                        // resolution is unavailable for a parsed incoming message.
-                                        response_intents = vec![
-                                            CpdlcResponseIntent::Wilco,
-                                            CpdlcResponseIntent::Unable,
-                                            CpdlcResponseIntent::Standby,
-                                        ];
-                                    }
-                                    if standby_from_atc {
-                                        response_intents.retain(|i| !matches!(i, CpdlcResponseIntent::Standby));
-                                    }
-                                    let priority_intents: Vec<CpdlcResponseIntent> = response_intents
-                                        .iter()
-                                        .copied()
-                                        .filter(|i| is_priority_response_intent(*i))
-                                        .collect();
-                                    let more_intents: Vec<CpdlcResponseIntent> = response_intents
-                                        .iter()
-                                        .copied()
-                                        .filter(|i| !is_priority_response_intent(*i))
-                                        .collect();
-                                    let needs_atc_response = !recent_closure && action_target_min.is_some() && !response_intents.is_empty();
-                                    let standby_clock = if standby_from_aircraft || standby_from_atc {
-                                        standby_elapsed_label(req.timestamp)
-                                    } else {
-                                        String::new()
-                                    };
-                                    let show_received_flag = req.is_outgoing
-                                        && !recent_closure
-                                        && !is_closing_response_message(req)
-                                        && !standby_from_atc;
-                                    let received_clock = if show_received_flag {
-                                        standby_elapsed_label(req.timestamp)
-                                    } else {
-                                        String::new()
-                                    };
-                                    let text = if standby_from_aircraft || standby_from_atc {
-                                        action_source
-                                            .and_then(|m| m.display_text.clone())
-                                            .unwrap_or_else(|| req.display_text.clone().unwrap_or_else(|| "Unknown request".to_string()))
-                                    } else if recent_closure {
-                                        action_source
-                                            .and_then(|m| m.display_text.clone())
-                                            .unwrap_or_else(|| "Unknown request".to_string())
-                                    } else {
-                                        req.display_text.clone().unwrap_or_else(|| "Unknown request".to_string())
-                                    };
-                                    let from = if standby_from_aircraft || standby_from_atc || recent_closure {
-                                        if let Some(src) = action_source {
-                                            if src.is_outgoing {
-                                                src.to_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
-                                            } else {
-                                                src.from_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
-                                            }
-                                        } else if req.is_outgoing {
-                                            req.to_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
-                                        } else {
-                                            req.from_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
+                                    let priority_intents: Vec<CpdlcResponseIntent> = dlg.response_intents.iter().copied().filter(|i| is_priority_response_intent(*i)).collect();
+                                    let more_intents: Vec<CpdlcResponseIntent> = dlg.response_intents.iter().copied().filter(|i| !is_priority_response_intent(*i)).collect();
+                                    let has_actions = !dlg.response_intents.is_empty();
+                                    let show_standby = dlg.response_intents.contains(&CpdlcResponseIntent::Standby);
+                                    let flag_content = match &dlg.flag {
+                                        DialogueFlag::Standby(ts) => Some(("standby-flag", format!("STANDBY {}", standby_elapsed_label(*ts)))),
+                                        DialogueFlag::Closed { intent, positive } => {
+                                            let cls = if *positive { "standby-flag closure-flag positive" } else { "standby-flag closure-flag negative" };
+                                            Some((cls, intent.label().to_string()))
                                         }
-                                    } else if req.is_outgoing {
-                                        req.to_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
-                                    } else {
-                                        req.from_callsign.clone().unwrap_or_else(|| "UNKNOWN".to_string())
+                                        DialogueFlag::Received(ts) => Some(("standby-flag received-flag", format!("RECEIVED {}", standby_elapsed_label(*ts)))),
+                                        DialogueFlag::None => None,
                                     };
-                                    let card_class = if standby_from_aircraft {
-                                        "pending-request-item standby-aircraft"
-                                    } else if standby_from_atc {
-                                        "pending-request-item standby-atc"
-                                    } else if recent_closure && closure_positive {
-                                        "pending-request-item closed-positive"
-                                    } else if recent_closure {
-                                        "pending-request-item closed-negative"
-                                    } else {
-                                        "pending-request-item"
-                                    };
+                                    let cs = &dlg.aircraft_callsign;
+                                    let text = &dlg.display_text;
+                                    let card_class = dlg.card_class;
                                     rsx! {
                                         div { class: "{card_class}",
                                             div { class: "request-line",
-                                                div { class: "request-text", "{from} | {text}" }
-                                                if standby_from_aircraft || standby_from_atc {
-                                                    div { class: "standby-flag", "STANDBY {standby_clock}" }
-                                                } else if let Some(intent) = closure_intent {
-                                                    {
-                                                        let cls = if closure_positive {
-                                                            "standby-flag closure-flag positive"
-                                                        } else {
-                                                            "standby-flag closure-flag negative"
-                                                        };
-                                                        let label = intent.label();
-                                                        rsx! {
-                                                            div { class: "{cls}", "{label}" }
-                                                        }
-                                                    }
-                                                } else if show_received_flag {
-                                                    div { class: "standby-flag received-flag", "RECEIVED {received_clock}" }
+                                                div { class: "request-text", "{cs} | {text}" }
+                                                if let Some((flag_class, flag_label)) = &flag_content {
+                                                    div { class: "{flag_class}", "{flag_label}" }
                                                 }
                                             }
-                                            if needs_atc_response {
+                                            if has_actions {
                                                 div { class: "request-actions",
-                                                    if is_y_response {
+                                                    if dlg.is_y_response {
                                                         div { class: "action-split",
                                                             button {
                                                                 class: "action-btn unable action-split-main",
                                                                 onclick: {
                                                                     let callsign_clone = callsign.clone();
+                                                                    let cs_clone = dlg.aircraft_callsign.clone();
+                                                                    let target_min = dlg.action_min;
                                                                     move |_| {
-                                                                        if let Some(target_min) = action_target_min {
-                                                                            handle_quick_response(
-                                                                                app_state,
-                                                                                tab_id,
-                                                                                nats_clients,
-                                                                                &callsign_clone,
-                                                                                target_min,
-                                                                                CpdlcResponseIntent::Unable,
-                                                                            );
+                                                                        if let Some(min) = target_min {
+                                                                            handle_quick_response(app_state, tab_id, nats_clients, &callsign_clone, &cs_clone, min, CpdlcResponseIntent::Unable);
                                                                         }
                                                                     }
                                                                 },
@@ -971,34 +1004,28 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                             }
                                                             button {
                                                                 class: "action-btn-compose action-split-plus",
-                                                                onclick: move |_| {
-                                                                    if let Some(target_min) = action_target_min {
-                                                                        inject_response_in_composer(
-                                                                            app_state,
-                                                                            tab_id,
-                                                                            CpdlcResponseIntent::Unable,
-                                                                            target_min,
-                                                                        );
+                                                                onclick: {
+                                                                    let cs_clone = dlg.aircraft_callsign.clone();
+                                                                    let target_min = dlg.action_min;
+                                                                    move |_| {
+                                                                        if let Some(min) = target_min {
+                                                                            inject_response_in_composer(app_state, tab_id, CpdlcResponseIntent::Unable, min, &cs_clone);
+                                                                        }
                                                                     }
                                                                 },
                                                                 "+"
                                                             }
                                                         }
-                                                        if !standby_from_atc {
+                                                        if show_standby {
                                                             button {
                                                                 class: "action-btn standby",
                                                                 onclick: {
                                                                     let callsign_clone = callsign.clone();
+                                                                    let cs_clone = dlg.aircraft_callsign.clone();
+                                                                    let target_min = dlg.action_min;
                                                                     move |_| {
-                                                                        if let Some(target_min) = action_target_min {
-                                                                            handle_quick_response(
-                                                                                app_state,
-                                                                                tab_id,
-                                                                                nats_clients,
-                                                                                &callsign_clone,
-                                                                                target_min,
-                                                                                CpdlcResponseIntent::Standby,
-                                                                            );
+                                                                        if let Some(min) = target_min {
+                                                                            handle_quick_response(app_state, tab_id, nats_clients, &callsign_clone, &cs_clone, min, CpdlcResponseIntent::Standby);
                                                                         }
                                                                     }
                                                                 },
@@ -1007,9 +1034,13 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                         }
                                                         button {
                                                             class: "action-btn-compose action-btn-compose-main",
-                                                            onclick: move |_| {
-                                                                if let Some(target_min) = action_target_min {
-                                                                    open_response_composer(app_state, tab_id, target_min);
+                                                            onclick: {
+                                                                let cs_clone = dlg.aircraft_callsign.clone();
+                                                                let target_min = dlg.action_min;
+                                                                move |_| {
+                                                                    if let Some(min) = target_min {
+                                                                        open_response_composer(app_state, tab_id, min, &cs_clone);
+                                                                    }
                                                                 }
                                                             },
                                                             "COMPOSE"
@@ -1026,16 +1057,11 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                                             class: "{btn_class} action-split-main",
                                                                             onclick: {
                                                                                 let callsign_clone = callsign.clone();
+                                                                                let cs_clone = dlg.aircraft_callsign.clone();
+                                                                                let target_min = dlg.action_min;
                                                                                 move |_| {
-                                                                                    if let Some(target_min) = action_target_min {
-                                                                                        handle_quick_response(
-                                                                                            app_state,
-                                                                                            tab_id,
-                                                                                            nats_clients,
-                                                                                            &callsign_clone,
-                                                                                            target_min,
-                                                                                            intent_val,
-                                                                                        );
+                                                                                    if let Some(min) = target_min {
+                                                                                        handle_quick_response(app_state, tab_id, nats_clients, &callsign_clone, &cs_clone, min, intent_val);
                                                                                     }
                                                                                 }
                                                                             },
@@ -1043,14 +1069,13 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                                         }
                                                                         button {
                                                                             class: "action-btn-compose action-split-plus",
-                                                                            onclick: move |_| {
-                                                                                if let Some(target_min) = action_target_min {
-                                                                                    inject_response_in_composer(
-                                                                                        app_state,
-                                                                                        tab_id,
-                                                                                        intent_val,
-                                                                                        target_min,
-                                                                                    );
+                                                                            onclick: {
+                                                                                let cs_clone = dlg.aircraft_callsign.clone();
+                                                                                let target_min = dlg.action_min;
+                                                                                move |_| {
+                                                                                    if let Some(min) = target_min {
+                                                                                        inject_response_in_composer(app_state, tab_id, intent_val, min, &cs_clone);
+                                                                                    }
                                                                                 }
                                                                             },
                                                                             "+"
@@ -1076,16 +1101,11 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                                                         class: "{btn_class} action-split-main",
                                                                                         onclick: {
                                                                                             let callsign_clone = callsign.clone();
+                                                                                            let cs_clone = dlg.aircraft_callsign.clone();
+                                                                                            let target_min = dlg.action_min;
                                                                                             move |_| {
-                                                                                                if let Some(target_min) = action_target_min {
-                                                                                                    handle_quick_response(
-                                                                                                        app_state,
-                                                                                                        tab_id,
-                                                                                                        nats_clients,
-                                                                                                        &callsign_clone,
-                                                                                                        target_min,
-                                                                                                        intent_val,
-                                                                                                    );
+                                                                                                if let Some(min) = target_min {
+                                                                                                    handle_quick_response(app_state, tab_id, nats_clients, &callsign_clone, &cs_clone, min, intent_val);
                                                                                                 }
                                                                                             }
                                                                                         },
@@ -1093,14 +1113,13 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                                                     }
                                                                                     button {
                                                                                         class: "action-btn-compose action-split-plus",
-                                                                                        onclick: move |_| {
-                                                                                            if let Some(target_min) = action_target_min {
-                                                                                                inject_response_in_composer(
-                                                                                                    app_state,
-                                                                                                    tab_id,
-                                                                                                    intent_val,
-                                                                                                    target_min,
-                                                                                                );
+                                                                                        onclick: {
+                                                                                            let cs_clone = dlg.aircraft_callsign.clone();
+                                                                                            let target_min = dlg.action_min;
+                                                                                            move |_| {
+                                                                                                if let Some(min) = target_min {
+                                                                                                    inject_response_in_composer(app_state, tab_id, intent_val, min, &cs_clone);
+                                                                                                }
                                                                                             }
                                                                                         },
                                                                                         "+"
@@ -1115,9 +1134,13 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
 
                                                         button {
                                                             class: "action-btn-compose action-btn-compose-main",
-                                                            onclick: move |_| {
-                                                                if let Some(target_min) = action_target_min {
-                                                                    open_response_composer(app_state, tab_id, target_min);
+                                                            onclick: {
+                                                                let cs_clone = dlg.aircraft_callsign.clone();
+                                                                let target_min = dlg.action_min;
+                                                                move |_| {
+                                                                    if let Some(min) = target_min {
+                                                                        open_response_composer(app_state, tab_id, min, &cs_clone);
+                                                                    }
                                                                 }
                                                             },
                                                             "COMPOSE RESPONSE"
@@ -1135,7 +1158,7 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
 
                 div { class: "console-composer-section",
                     div { class: "console-section-header", "OUTGOING MESSAGE COMPOSER" }
-                    if selected_flight.is_none() {
+                    if compose_flight.is_none() {
                         div { class: "composer-no-selection", "SELECT AIRCRAFT TO COMPOSE MESSAGES" }
                     } else if !can_compose_on_selected {
                         div { class: "composer-no-selection",
@@ -1358,7 +1381,7 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                                 class: "param-add-btn param-send-now",
                                                 onclick: {
                                                     let c = cmd.to_string();
-                                                    let flight = selected_flight.clone();
+                                                    let flight = compose_flight.clone();
                                                     let callsign_clone = callsign.clone();
                                                     move |_| {
                                                         let Some(ref f) = flight else { return; };
@@ -1403,6 +1426,7 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                             tab.cmd_arg_inputs.clear();
                                             tab.compose_mode = false;
                                             tab.compose_mrn = None;
+                                            tab.compose_target_callsign = None;
                                             tab.atc_uplink_open = false;
                                         }
                                     },
@@ -1412,7 +1436,7 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                     class: if compose_elements.is_empty() { "send-uplink disabled" } else { "send-uplink" },
                                     disabled: compose_elements.is_empty(),
                                     onclick: {
-                                        let flight = selected_flight.clone();
+                                        let flight = compose_flight.clone();
                                         let callsign_clone = callsign.clone();
                                         let elements_clone = compose_elements.clone();
                                         let mrn = compose_mrn;
@@ -1535,91 +1559,66 @@ fn handle_quick_response(
     tab_id: Uuid,
     nats_clients: Signal<NatsClients>,
     callsign: &str,
+    aircraft_callsign: &str,
     min: u8,
     intent: CpdlcResponseIntent,
 ) {
     eprintln!(
-        "[ATC SEND][QUICK] tab={} from={} mrn={} response={}",
+        "[ATC SEND][QUICK] tab={} from={} to={} mrn={} response={}",
         tab_id,
         callsign,
+        aircraft_callsign,
         min,
         intent.label()
     );
 
-    let (flight_info, response_text) = {
+    let flight = {
         let state = app_state.read();
         let tab = match state.tab_by_id(tab_id) {
             Some(t) => t,
             None => return,
         };
-
-        let flight = match tab.messages.iter().find(|m| m.min == Some(min) && !m.is_outgoing) {
-            Some(msg) => {
-                let from_callsign = msg.from_callsign.clone().unwrap_or_default();
-                tab.atc_sessions.values().find_map(|session| {
-                    let callsign = session.aircraft.as_ref()?.to_string();
-                    let aircraft_address: AcarsEndpointAddress = session.aircraft_address.as_ref()?.clone();
-                    let phase = session
-                        .active_connection
-                        .as_ref()
-                        .map(|c| c.phase)
-                        .or_else(|| session.inactive_connection.as_ref().map(|c| c.phase))
-                        .unwrap_or(CpdlcConnectionPhase::Terminated);
-                    if callsign == from_callsign {
-                        Some(AtcLinkedFlight {
-                            callsign: callsign.clone(),
-                            aircraft_callsign: callsign,
-                            aircraft_address,
-                            phase,
-                        })
-                    } else {
-                        None
-                    }
-                })
-            }
-            None => return,
-        };
-
-        (flight, intent.label().to_string())
+        find_linked_flight(tab, aircraft_callsign)
     };
+
+    let Some(flight) = flight else { return };
+    let response_text = intent.label().to_string();
 
     let clients = nats_clients.read();
     if let Some(client) = clients.get(&tab_id) {
-        if let Some(flight_info) = flight_info {
-            let element_id = intent.uplink_id();
-            let elements = vec![MessageElement::new(element_id, vec![])];
-            let msg = client.cpdlc_station_application(
-                callsign,
-                &flight_info.aircraft_callsign,
-                &flight_info.aircraft_address,
-                elements,
-                Some(min),
-            );
-            let response_min = match &msg {
-                OpenLinkMessage::Acars(acars) => match &acars.message {
-                    AcarsMessage::CPDLC(cpdlc) => match &cpdlc.message {
-                        CpdlcMessageType::Application(app) => Some(app.min),
-                        _ => None,
-                    },
+        let element_id = intent.uplink_id();
+        let elements = vec![MessageElement::new(element_id, vec![])];
+        let msg = client.cpdlc_station_application(
+            callsign,
+            &flight.aircraft_callsign,
+            &flight.aircraft_address,
+            elements,
+            Some(min),
+        );
+        let response_min = match &msg {
+            OpenLinkMessage::Acars(acars) => match &acars.message {
+                AcarsMessage::CPDLC(cpdlc) => match &cpdlc.message {
+                    CpdlcMessageType::Application(app) => Some(app.min),
+                    _ => None,
                 },
-                _ => None,
-            };
-            let client = client.clone();
-            spawn(async move {
-                if let Err(e) = client.send_to_server(msg).await {
-                    eprintln!("[ATC SEND][QUICK] failed: {e}");
-                }
-            });
+            },
+            _ => None,
+        };
+        let client = client.clone();
+        spawn(async move {
+            if let Err(e) = client.send_to_server(msg).await {
+                eprintln!("[ATC SEND][QUICK] failed: {e}");
+            }
+        });
 
-            crate::push_outgoing_message_to_with_min_and_mrn(
-                &mut app_state,
-                tab_id,
-                &response_text,
-                Some(&flight_info.aircraft_callsign),
-                response_min,
-                Some(min),
-            );
-        }
+        crate::push_outgoing_message_to_with_min_and_mrn(
+            &mut app_state,
+            tab_id,
+            &response_text,
+            Some(&flight.aircraft_callsign),
+            response_min,
+            Some(min),
+        );
     }
 
     let mut state = app_state.write();
@@ -1627,7 +1626,7 @@ fn handle_quick_response(
         if let Some(m) = tab
             .messages
             .iter_mut()
-            .find(|m| m.min == Some(min) && !m.is_outgoing)
+            .find(|m| m.min == Some(min) && !m.is_outgoing && m.from_callsign.as_deref() == Some(aircraft_callsign))
         {
             if !matches!(intent, CpdlcResponseIntent::Standby) {
                 m.responded = true;
@@ -1641,24 +1640,27 @@ fn inject_response_in_composer(
     tab_id: Uuid,
     intent: CpdlcResponseIntent,
     mrn: u8,
+    aircraft_callsign: &str,
 ) {
     let mut state = app_state.write();
     if let Some(tab) = state.tab_mut_by_id(tab_id) {
-        select_flight_for_mrn(tab, mrn);
+        select_flight_by_callsign(tab, aircraft_callsign);
         tab.compose_mode = true;
         tab.compose_mrn = Some(mrn);
+        tab.compose_target_callsign = Some(aircraft_callsign.to_string());
         tab.atc_uplink_open = true;
         tab.compose_elements
             .push(MessageElement::new(intent.uplink_id(), vec![]));
     }
 }
 
-fn open_response_composer(mut app_state: Signal<AppState>, tab_id: Uuid, mrn: u8) {
+fn open_response_composer(mut app_state: Signal<AppState>, tab_id: Uuid, mrn: u8, aircraft_callsign: &str) {
     let mut state = app_state.write();
     if let Some(tab) = state.tab_mut_by_id(tab_id) {
-        select_flight_for_mrn(tab, mrn);
+        select_flight_by_callsign(tab, aircraft_callsign);
         tab.compose_mode = true;
         tab.compose_mrn = Some(mrn);
+        tab.compose_target_callsign = Some(aircraft_callsign.to_string());
         tab.atc_uplink_open = true;
     }
 }
@@ -1740,6 +1742,7 @@ fn send_composed_message(
         tab.atc_uplink_open = false;
         tab.compose_mode = false;
         tab.compose_mrn = None;
+        tab.compose_target_callsign = None;
         tab.compose_elements.clear();
         tab.cmd_search_query.clear();
         tab.contact_input.clear();

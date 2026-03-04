@@ -59,6 +59,8 @@ SDKs SHOULD provide high-level helpers equivalent to:
 - Short response precedence: $WU > AN > R > Y > N$ (`NE` behaves as `N`).
 - Logical acknowledgement must not acknowledge logical acknowledgements.
 - Logical acknowledgement must reference received message `MIN` via `MRN`.
+- MIN assignment is **sender-owned**: each SDK assigns MINs locally in the `1..63` operational range.
+- Per-session MIN progression with wrap (`63 → 1`) and reset on session setup transitions (logon/connection flows).
 - MIN domain awareness: valid operational range is `1..63`.
 
 ## 5. Conformance validation

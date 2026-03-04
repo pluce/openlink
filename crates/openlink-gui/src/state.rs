@@ -130,6 +130,7 @@ pub struct TabState {
     pub compose_mode: bool,
     pub compose_elements: Vec<MessageElement>,
     pub compose_mrn: Option<u8>,
+    pub compose_target_callsign: Option<String>,
     pub compose_send_after_param: bool,
 
     // Common
@@ -211,6 +212,7 @@ impl TabState {
             compose_mode: false,
             compose_elements: Vec::new(),
             compose_mrn: None,
+            compose_target_callsign: None,
             compose_send_after_param: false,
             messages: Vec::new(),
             nats_task_active: false,

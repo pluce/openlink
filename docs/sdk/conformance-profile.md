@@ -34,6 +34,7 @@ Define acceptance criteria for SDKs used by external integrators.
 
 - Rust and TypeScript SDK runtime rules remain behaviorally aligned
 - Logical acknowledgement and short-response selection use equivalent rules
+- Sender-owned MIN sequencing (`1..63`, wrap, reset) is consistent across SDKs
 - Any intentional divergence is documented in both SDK docs and changelogs
 
 ### 6) Fixture conformance

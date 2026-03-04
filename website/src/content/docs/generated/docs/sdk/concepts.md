@@ -45,9 +45,11 @@ Business logic handled by the server includes:
 - CPDLC session lifecycle (logon, connection, transfer, end-service),
 - authoritative active/inactive connection state for each participant,
 - dialogue state transitions (opened/waiting/closed based on exchanged messages),
-- MIN/MRN assignment/validation and cross-message consistency,
+- MRN validation and cross-message consistency,
 - session snapshot replay on reconnect/online,
 - server-side normalization or protocol safety rules when required.
+
+> **Note:** MIN (Message Identification Number) assignment is **sender-owned** — each SDK assigns MINs locally in the operational range `1..63` (wrapping and resetting on session setup transitions). The server does not assign MINs.
 
 ### What integrators must implement
 

@@ -28,7 +28,8 @@ Use raw mode when you need full control of NATS, serialization, and runtime beha
 - message ID exists in catalog,
 - argument count and types are valid,
 - response attribute is respected,
-- dialogue closing/suggestion rules are applied on replies.
+- dialogue closing/suggestion rules are applied on replies,
+- sender-owned MIN assignment: each sender assigns MINs in the `1..63` range with wrap and reset on session setup transitions.
 
 ## Server-authoritative behavior to account for
 

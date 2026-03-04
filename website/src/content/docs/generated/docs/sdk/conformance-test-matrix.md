@@ -109,6 +109,14 @@ Pass criteria:
 
 - closing intents close dialogues unless standby element is present.
 
+### 3.4 MIN sequencing behavior
+
+- MIN is sender-owned: assigned by the sending SDK, not the server.
+- MIN values stay in the `1..63` operational range.
+- MIN wraps from `63` back to `1`.
+- MIN counters are per sender/receiver session pair.
+- MIN counters reset on session setup transitions (logon/connection flows).
+
 ## 4) Integration behavior tests (MUST)
 
 ### 4.1 Connection lifecycle

@@ -12,13 +12,13 @@
  * ## Dialog management (MIN/MRN linking)
  *
  * Each CPDLC message has a Message Identification Number (MIN) assigned
- * by the server. A response references the original message via a Message
+ * by the sender SDK. A response references the original message via a Message
  * Reference Number (MRN) equal to the original's MIN.
  *
  * Dialog chain example:
  *   ATC → CLIMB TO FL360        (min=X)
  *   Pilot → STANDBY             (mrn=X, short response — not a separate msg)
- *   Pilot → [free text response] (mrn=X, server assigns min=Y)
+ *   Pilot → [free text response] (mrn=X, sender SDK assigns min=Y)
  *   ATC → ROGER                 (mrn=Y → resolved to X via chain)
  *
  * All linked messages in a chain are displayed inline under the root

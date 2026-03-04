@@ -21,6 +21,7 @@ Use this list as a go-live gate before production rollout.
 - [ ] Message IDs and metadata validated with `spec/cpdlc/catalog.v1.json`
 - [ ] Argument count/types validated before send
 - [ ] Response rules enforced (attribute, closing, suggestions)
+- [ ] Sender-owned MIN sequencing implemented (`1..63`, wrap, reset on session setup)
 - [ ] Shared runtime vectors pass (`spec/sdk-conformance/runtime-vectors.v1.json`)
 - [ ] Shared wire examples pass (`spec/sdk-conformance/wire-examples.v1.json`)
 
