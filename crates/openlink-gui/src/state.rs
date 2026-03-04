@@ -127,6 +127,8 @@ pub struct TabState {
     // Generic command/composition state (used by both DCDU and ATC views)
     pub cmd_arg_inputs: Vec<String>,
     pub cmd_search_query: String,
+    pub cmd_dropdown_open: bool,
+    pub cmd_dropdown_filter: String,
     pub compose_mode: bool,
     pub compose_elements: Vec<MessageElement>,
     pub compose_mrn: Option<u8>,
@@ -209,6 +211,8 @@ impl TabState {
             suggested_uplink_ids: Vec::new(),
             cmd_arg_inputs: Vec::new(),
             cmd_search_query: String::new(),
+            cmd_dropdown_open: false,
+            cmd_dropdown_filter: String::new(),
             compose_mode: false,
             compose_elements: Vec::new(),
             compose_mrn: None,

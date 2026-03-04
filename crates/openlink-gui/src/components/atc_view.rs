@@ -541,18 +541,51 @@ fn build_pending_dialogues(messages: &[ReceivedMessage]) -> Vec<PendingDialogue>
     out
 }
 
+/// UM IDs shown as primary buttons per domain.
+const VERTICAL_BUTTONS: &[&str] = &["UM20", "UM23", "UM19", "UM46", "UM36"];
+const LATERAL_BUTTONS: &[&str]  = &["UM74", "UM80", "UM81", "UM92", "UM190"];
+const OTHER_BUTTONS: &[&str]    = &["UM169", "UM117", "UM120", "UM106", "UM116"];
+
+/// UM IDs available in the "more" dropdown per domain.
+const VERTICAL_DROPDOWN: &[&str] = &[
+    "UM19", "UM20", "UM21", "UM22", "UM23", "UM24", "UM25", "UM26", "UM27", "UM28",
+    "UM29", "UM30", "UM31", "UM32", "UM34", "UM36", "UM37", "UM38", "UM39",
+    "UM46", "UM47", "UM48", "UM49", "UM50",
+    "UM61",
+    "UM128", "UM129", "UM133", "UM135", "UM148", "UM149",
+];
+const LATERAL_DROPDOWN: &[&str] = &[
+    "UM51", "UM52", "UM53", "UM54", "UM55",
+    "UM61", "UM64", "UM67",
+    "UM74", "UM79", "UM80", "UM81", "UM82",
+    "UM92", "UM94", "UM96",
+    "UM130",
+    "UM190", "UM215",
+];
+const OTHER_DROPDOWN: &[&str] = &[
+    "UM106", "UM107", "UM108", "UM109", "UM116",
+    "UM117", "UM120", "UM123", "UM179",
+    "UM128", "UM129", "UM130", "UM132", "UM133", "UM135",
+    "UM148", "UM149",
+    "UM153", "UM158", "UM168", "UM169", "UM176", "UM183",
+    "UM222",
+];
+
+fn command_domain(key: &str) -> &'static str {
+    match key {
+        k if VERTICAL_BUTTONS.contains(&k) || VERTICAL_DROPDOWN.contains(&k) => "vertical",
+        k if LATERAL_BUTTONS.contains(&k) || LATERAL_DROPDOWN.contains(&k) => "lateral",
+        "L_TURN_LEFT" | "L_TURN_RIGHT" => "lateral",
+        _ => "other",
+    }
+}
+
 fn selected_group(key: &str) -> Option<&str> {
     if let Some(group) = key.strip_prefix("grp:") {
         return Some(group);
     }
     let cmd = key.strip_prefix("cmd:")?;
-    Some(match cmd {
-        "V_CLIMB_TO" | "V_DESCEND_TO" | "V_MAINTAIN" | "V_CLIMB_MAINTAIN" | "V_BLOCK_LEVEL"
-        | "V_CROSS_LEVEL" => "vertical",
-        "L_DIRECT_TO" | "L_FLY_HEADING" | "L_TURN_LEFT" | "L_TURN_RIGHT" | "L_ROUTE"
-        | "L_HOLD" => "lateral",
-        _ => "other",
-    })
+    Some(command_domain(cmd))
 }
 
 fn selected_command(key: &str) -> Option<&str> {
@@ -560,25 +593,19 @@ fn selected_command(key: &str) -> Option<&str> {
 }
 
 fn command_uplink_id(key: &str) -> Option<&'static str> {
+    // Special convenience wrappers.
     match key {
-        "V_CLIMB_TO" => Some("UM20"),
-        "V_DESCEND_TO" => Some("UM23"),
-        "V_MAINTAIN" => Some("UM19"),
-        "V_CLIMB_MAINTAIN" => Some("UM21"),
-        "V_BLOCK_LEVEL" => Some("UM30"),
-        "V_CROSS_LEVEL" => Some("UM46"),
-        "L_DIRECT_TO" => Some("UM74"),
-        "L_FLY_HEADING" => Some("UM190"),
-        "L_TURN_LEFT" | "L_TURN_RIGHT" => Some("UM94"),
-        "L_ROUTE" => Some("UM80"),
-        "L_HOLD" => Some("UM92"),
-        "O_SPEED" => Some("UM106"),
-        "O_CONTACT" => Some("UM117"),
-        "O_SQUAWK" => Some("UM123"),
-        "O_REPORT" => Some("UM132"),
-        "O_FREETEXT" => Some("UM169"),
-        _ => None,
+        "L_TURN_LEFT" | "L_TURN_RIGHT" => return Some("UM94"),
+        _ => {}
     }
+    // Keys that are already UM IDs — validate they exist in the registry.
+    if key.starts_with("UM") {
+        if find_definition(key).is_some() {
+            // Return a &'static str from the registry entry.
+            return find_definition(key).map(|d| d.id);
+        }
+    }
+    None
 }
 
 fn arg_type_label(arg_type: openlink_models::ArgType) -> &'static str {
@@ -638,6 +665,40 @@ fn arg_type_placeholder(arg_type: openlink_models::ArgType) -> &'static str {
         ArgType::PersonsOnBoard => "Nombre de personnes a bord",
         ArgType::SpeedType => "Type de vitesse",
         ArgType::DepartureClearance => "Clairance depart",
+    }
+}
+
+/// Short button label for the 5 primary buttons per domain.
+fn command_button_label(key: &str) -> &'static str {
+    match key {
+        // Vertical
+        "UM20" => "CLIMB TO",
+        "UM23" => "DESCEND TO",
+        "UM19" => "MAINTAIN",
+        "UM46" => "CROSS AT",
+        "UM36" => "EXPEDITE CLB",
+        // Lateral
+        "UM74" => "DIRECT TO",
+        "UM80" => "CLEARED ROUTE",
+        "UM81" => "CLEARED PROC",
+        "UM92" => "HOLD",
+        "UM190" => "HEADING",
+        // Other
+        "UM169" => "FREE TEXT",
+        "UM117" => "CONTACT",
+        "UM120" => "MONITOR",
+        "UM106" => "MAINTAIN SPD",
+        "UM116" => "RESUME SPD",
+        _ => "???",
+    }
+}
+
+/// Dropdown label: "UM20 — CLIMB TO [level]".
+fn command_dropdown_label(um_id: &str) -> String {
+    if let Some(def) = find_definition(um_id) {
+        format!("{} — {}", um_id, def.template)
+    } else {
+        um_id.to_string()
     }
 }
 
@@ -853,6 +914,8 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
     let compose_mrn = tab.compose_mrn;
     let compose_target_cs = tab.compose_target_callsign.clone();
     let selection_key = tab.cmd_search_query.clone();
+    let dropdown_open = tab.cmd_dropdown_open;
+    let dropdown_filter = tab.cmd_dropdown_filter.clone();
     let group = selected_group(&selection_key);
     let command = selected_command(&selection_key);
 
@@ -1203,95 +1266,103 @@ pub fn AtcView(tab_id: Uuid, app_state: Signal<AppState>, nats_clients: Signal<N
                                 }
 
                                 if let Some(g) = group {
-                                    div { class: "parameter-selection",
-                                        div { class: "step-header", "2. MESSAGE TEMPLATE" }
-                                        if g == "vertical" {
-                                            div { class: "instruction-grid",
-                                                for cmd in ["V_CLIMB_TO", "V_DESCEND_TO", "V_MAINTAIN", "V_CLIMB_MAINTAIN", "V_BLOCK_LEVEL"] {
-                                                    button {
-                                                        class: if command == Some(cmd) { "instruction-btn active" } else { "instruction-btn" },
-                                                        onclick: {
-                                                            let c = cmd.to_string();
-                                                            move |_| {
-                                                                let mut state = app_state.write();
-                                                                if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                                                                    tab.cmd_search_query = format!("cmd:{c}");
-                                                                    tab.contact_input.clear();
-                                                                    tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&c).len()];
+                                    {
+                                        let (buttons, dropdown, dropdown_label): (&[&str], &[&str], &str) = match g {
+                                            "vertical" => (VERTICAL_BUTTONS, VERTICAL_DROPDOWN, "More vertical..."),
+                                            "lateral" => (LATERAL_BUTTONS, LATERAL_DROPDOWN, "More lateral..."),
+                                            _ => (OTHER_BUTTONS, OTHER_DROPDOWN, "More other..."),
+                                        };
+                                        rsx! {
+                                            div { class: "parameter-selection",
+                                                div { class: "step-header", "2. MESSAGE TEMPLATE" }
+                                                div { class: "instruction-grid",
+                                                    for cmd in buttons.iter() {
+                                                        {
+                                                            let btn_label = command_button_label(cmd);
+                                                            rsx! {
+                                                                button {
+                                                                    class: if command == Some(*cmd) { "instruction-btn active" } else { "instruction-btn" },
+                                                                    onclick: {
+                                                                        let c = cmd.to_string();
+                                                                        move |_| {
+                                                                            let mut state = app_state.write();
+                                                                            if let Some(tab) = state.tab_mut_by_id(tab_id) {
+                                                                                tab.cmd_search_query = format!("cmd:{c}");
+                                                                                tab.contact_input.clear();
+                                                                                tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&c).len()];
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "{btn_label}"
                                                                 }
                                                             }
-                                                        },
-                                                        "{command_label(cmd)}"
+                                                        }
                                                     }
-                                                }
-                                            }
-                                            select {
-                                                class: "instruction-dropdown",
-                                                onchange: move |evt: Event<FormData>| {
-                                                    let v = evt.value();
-                                                    if v.is_empty() { return; }
-                                                    let mut state = app_state.write();
-                                                    if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                                                        tab.cmd_search_query = format!("cmd:{v}");
-                                                        tab.contact_input.clear();
-                                                        tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&v).len()];
-                                                    }
-                                                },
-                                                option { value: "", "More vertical templates..." }
-                                                option { value: "V_CROSS_LEVEL", "CROSS AT LEVEL" }
-                                            }
-                                        } else if g == "lateral" {
-                                            div { class: "instruction-grid",
-                                                for cmd in ["L_DIRECT_TO", "L_FLY_HEADING", "L_TURN_LEFT", "L_TURN_RIGHT", "L_ROUTE"] {
-                                                    button {
-                                                        class: if command == Some(cmd) { "instruction-btn active" } else { "instruction-btn" },
-                                                        onclick: {
-                                                            let c = cmd.to_string();
-                                                            move |_| {
+                                                    // Custom searchable dropdown as 6th grid cell
+                                                    div { class: "dropdown-wrapper",
+                                                        button {
+                                                            class: "instruction-dropdown-inline",
+                                                            onclick: move |_| {
                                                                 let mut state = app_state.write();
                                                                 if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                                                                    tab.cmd_search_query = format!("cmd:{c}");
-                                                                    tab.contact_input.clear();
-                                                                    tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&c).len()];
+                                                                    tab.cmd_dropdown_open = !tab.cmd_dropdown_open;
+                                                                    tab.cmd_dropdown_filter.clear();
+                                                                }
+                                                            },
+                                                            "{dropdown_label}"
+                                                        }
+                                                        if dropdown_open {
+                                                            div { class: "dropdown-panel",
+                                                                input {
+                                                                    class: "dropdown-filter",
+                                                                    r#type: "text",
+                                                                    placeholder: "Filter...",
+                                                                    value: "{dropdown_filter}",
+                                                                    onmounted: move |element| async move {
+                                                                        let _ = element.data().set_focus(true).await;
+                                                                    },
+                                                                    oninput: move |evt: Event<FormData>| {
+                                                                        let mut state = app_state.write();
+                                                                        if let Some(tab) = state.tab_mut_by_id(tab_id) {
+                                                                            tab.cmd_dropdown_filter = evt.value();
+                                                                        }
+                                                                    },
+                                                                }
+                                                                div { class: "dropdown-options",
+                                                                    for um_id in dropdown.iter() {
+                                                                        {
+                                                                            let label = command_dropdown_label(um_id);
+                                                                            let filter_lower = dropdown_filter.to_lowercase();
+                                                                            let matches = filter_lower.is_empty() || label.to_lowercase().contains(&filter_lower);
+                                                                            if matches {
+                                                                                let v = um_id.to_string();
+                                                                                rsx! {
+                                                                                    div {
+                                                                                        class: "dropdown-option",
+                                                                                        onclick: {
+                                                                                            let v = v.clone();
+                                                                                            move |_| {
+                                                                                                let mut state = app_state.write();
+                                                                                                if let Some(tab) = state.tab_mut_by_id(tab_id) {
+                                                                                                    tab.cmd_search_query = format!("cmd:{v}");
+                                                                                                    tab.contact_input.clear();
+                                                                                                    tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&v).len()];
+                                                                                                    tab.cmd_dropdown_open = false;
+                                                                                                    tab.cmd_dropdown_filter.clear();
+                                                                                                }
+                                                                                            }
+                                                                                        },
+                                                                                        "{label}"
+                                                                                    }
+                                                                                }
+                                                                            } else {
+                                                                                rsx! {}
+                                                                            }
+                                                                        }
+                                                                    }
                                                                 }
                                                             }
-                                                        },
-                                                        "{command_label(cmd)}"
-                                                    }
-                                                }
-                                            }
-                                            select {
-                                                class: "instruction-dropdown",
-                                                onchange: move |evt: Event<FormData>| {
-                                                    let v = evt.value();
-                                                    if v.is_empty() { return; }
-                                                    let mut state = app_state.write();
-                                                    if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                                                        tab.cmd_search_query = format!("cmd:{v}");
-                                                        tab.contact_input.clear();
-                                                        tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&v).len()];
-                                                    }
-                                                },
-                                                option { value: "", "More lateral templates..." }
-                                                option { value: "L_HOLD", "HOLD AT" }
-                                            }
-                                        } else {
-                                            div { class: "instruction-grid",
-                                                for cmd in ["O_SPEED", "O_CONTACT", "O_SQUAWK", "O_REPORT", "O_FREETEXT"] {
-                                                    button {
-                                                        class: if command == Some(cmd) { "instruction-btn active" } else { "instruction-btn" },
-                                                        onclick: {
-                                                            let c = cmd.to_string();
-                                                            move |_| {
-                                                                let mut state = app_state.write();
-                                                                if let Some(tab) = state.tab_mut_by_id(tab_id) {
-                                                                    tab.cmd_search_query = format!("cmd:{c}");
-                                                                    tab.contact_input.clear();
-                                                                    tab.cmd_arg_inputs = vec![String::new(); command_param_specs(&c).len()];
-                                                                }
-                                                            }
-                                                        },
-                                                        "{command_label(cmd)}"
+                                                        }
                                                     }
                                                 }
                                             }
